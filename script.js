@@ -11,23 +11,36 @@ const baseMap = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
 }).addTo(map);
 
 // ==========================
-// DATA RISIKO (dummy dulu)
+// DATA RISIKO
 // ==========================
-const riskData = {
-  "cakung": 85,
-  "jatinegara": 40,
-  "duren sawit": 60,
-  "kramat jati": 30,
-  "pasar rebo": 20,
-  "ciracas": 50,
-  "cipayung": 35,
-  "makasar": 45,
-  "matraman": 70,
-  "pulo gadung": 80
-};
+const riskData = {};
 
 function normalizeDistrictName(name) {
   return (name || '').toLowerCase().trim();
+}
+
+function getDistrictName(feature) {
+  return feature.properties.name || 'Tanpa Nama';
+}
+
+function getRiskValueByName(name) {
+  return riskData[normalizeDistrictName(name)] || 0;
+}
+
+function generateRandomRisk() {
+  return Math.floor(Math.random() * 91) + 10;
+}
+
+function generateRandomRiskData(data) {
+  data.features.forEach(feature => {
+    const districtKey = normalizeDistrictName(getDistrictName(feature));
+
+    if (!districtKey || riskData[districtKey]) {
+      return;
+    }
+
+    riskData[districtKey] = generateRandomRisk();
+  });
 }
 
 // ==========================
@@ -46,8 +59,8 @@ function getColor(value) {
 // STYLE POLYGON
 // ==========================
 function style(feature) {
-  let kec = normalizeDistrictName(feature.properties.WADMKC);
-  let value = riskData[kec] || 0;
+  let kec = getDistrictName(feature);
+  let value = getRiskValueByName(kec);
 
   return {
     fillColor: getColor(value),
@@ -82,8 +95,8 @@ function resetHighlight(e) {
 // SETIAP FEATURE
 // ==========================
 function onEachFeature(feature, layer) {
-  let kec = feature.properties.WADMKC;
-  let value = riskData[normalizeDistrictName(kec)] || 0;
+  let kec = getDistrictName(feature);
+  let value = getRiskValueByName(kec);
 
   layer.on({
     mouseover: highlightFeature,
@@ -100,47 +113,71 @@ function onEachFeature(feature, layer) {
 // ==========================
 let geojson;
 let heatLayer;
+let heatPointLayer;
 
-function buildHeatmapPoints(data) {
-  const districtBounds = new Map();
+function buildHeatmapData(data) {
+  const districts = [];
 
   L.geoJSON(data, {
     onEachFeature: function(feature, layer) {
-      const districtKey = normalizeDistrictName(feature.properties.WADMKC);
-      const bounds = layer.getBounds();
+      const districtName = getDistrictName(feature);
+      const districtKey = normalizeDistrictName(districtName);
+      const center = typeof layer.getCenter === 'function'
+        ? layer.getCenter()
+        : layer.getBounds().getCenter();
 
-      if (!districtKey || !bounds.isValid()) {
+      if (!districtKey || !center) {
         return;
       }
 
-      if (!districtBounds.has(districtKey)) {
-        districtBounds.set(districtKey, L.latLngBounds(bounds.getSouthWest(), bounds.getNorthEast()));
-        return;
-      }
-
-      districtBounds.get(districtKey).extend(bounds);
+      districts.push({
+        name: districtName,
+        key: districtKey,
+        center: center,
+        risk: getRiskValueByName(districtName)
+      });
     }
   });
 
-  return Array.from(districtBounds.entries())
-    .map(([districtKey, bounds]) => {
-      const center = bounds.getCenter();
-      const riskValue = riskData[districtKey] || 0;
+  return districts;
+}
 
-      return [center.lat, center.lng, riskValue / 100];
+function createHeatPointLayer(districts) {
+  return L.layerGroup(
+    districts.map(district => L.circleMarker(district.center, {
+      radius: 6,
+      weight: 1.5,
+      color: '#ffffff',
+      fillColor: getColor(district.risk),
+      fillOpacity: 0.95
     })
-    .filter(point => point[2] > 0);
+      .bindTooltip(district.name, {
+        direction: 'top',
+        offset: [0, -8],
+        opacity: 1,
+        className: 'heat-tooltip'
+      })
+      .bindPopup(`<b>${district.name}</b><br>Risiko acak: ${district.risk}`))
+  );
 }
 
 fetch('data/jkt.geojson')
   .then(res => res.json())
   .then(data => {
+    generateRandomRiskData(data);
+
     geojson = L.geoJSON(data, {
       style: style,
       onEachFeature: onEachFeature
     }).addTo(map);
 
-    heatLayer = L.heatLayer(buildHeatmapPoints(data), {
+    const districts = buildHeatmapData(data);
+
+    heatLayer = L.heatLayer(districts.map(district => [
+      district.center.lat,
+      district.center.lng,
+      district.risk / 100
+    ]), {
       radius: 38,
       blur: 28,
       maxZoom: 13,
@@ -152,7 +189,11 @@ fetch('data/jkt.geojson')
         0.8: '#bd0026',
         1.0: '#800026'
       }
-    }).addTo(map);
+    });
+
+    heatPointLayer = createHeatPointLayer(districts);
+
+    const heatmapOverlay = L.layerGroup([heatLayer, heatPointLayer]).addTo(map);
 
     L.control.layers(
       {
@@ -160,7 +201,7 @@ fetch('data/jkt.geojson')
       },
       {
         'Risiko per Kecamatan': geojson,
-        'Heatmap Risiko': heatLayer
+        'Heatmap Risiko + Nama Daerah': heatmapOverlay
       },
       {
         collapsed: false
@@ -182,7 +223,7 @@ mapInfo.onAdd = function () {
   var div = L.DomUtil.create('div', 'map-info');
   div.innerHTML = `
     <strong>Heatmap Risiko</strong>
-    Semakin pekat warna merah, semakin tinggi konsentrasi wilayah dengan nilai risiko banjir.
+    Titik heatmap menampilkan nama daerah asli dari GeoJSON. Nilai risiko dibuat acak ulang setiap refresh halaman.
   `;
 
   L.DomEvent.disableClickPropagation(div);
