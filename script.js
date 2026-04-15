@@ -1,258 +1,518 @@
-// ==========================
-// INIT MAP
-// ==========================
-var map = L.map('map').setView([-6.21, 106.9], 11);
+const map = L.map('map').setView([-6.225, 106.925], 11);
 
-// ==========================
-// BASEMAP
-// ==========================
 const baseMap = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '&copy; OpenStreetMap contributors'
 }).addTo(map);
 
-// ==========================
-// DATA RISIKO
-// ==========================
-const riskData = {};
+L.control.scale({ imperial: false }).addTo(map);
+
+const elements = {
+  districtSelect: document.getElementById('districtSelect'),
+  resetViewButton: document.getElementById('resetViewButton'),
+  statDistrictCount: document.getElementById('statDistrictCount'),
+  statHighRiskCount: document.getElementById('statHighRiskCount'),
+  statAverageRainfall: document.getElementById('statAverageRainfall'),
+  statUpdatedAt: document.getElementById('statUpdatedAt'),
+  statRefreshInterval: document.getElementById('statRefreshInterval'),
+  mapSubtitle: document.getElementById('mapSubtitle'),
+  dataStatus: document.getElementById('dataStatus'),
+  detailContent: document.getElementById('detailContent'),
+  hotspotList: document.getElementById('hotspotList'),
+  systemSources: document.getElementById('systemSources')
+};
+
+const state = {
+  meta: null,
+  districtLookup: new Map(),
+  districts: [],
+  geojsonLayer: null,
+  heatOverlay: null,
+  bounds: null,
+  selectedKey: null
+};
 
 function normalizeDistrictName(name) {
-  return (name || '').toLowerCase().trim();
+  return (name || '')
+    .toLowerCase()
+    .replace(/\s+/g, '')
+    .trim();
 }
 
-function getDistrictName(feature) {
-  return feature.properties.name || 'Tanpa Nama';
+function getGeoDistrictName(feature) {
+  return feature.properties.name || '';
 }
 
-function getRiskValueByName(name) {
-  return riskData[normalizeDistrictName(name)] || 0;
+function formatNumber(value) {
+  return new Intl.NumberFormat('id-ID').format(value);
 }
 
-function generateRandomRisk() {
-  return Math.floor(Math.random() * 91) + 10;
+function formatUpdatedAt(value) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return 'Tidak tersedia';
+  }
+
+  return new Intl.DateTimeFormat('id-ID', {
+    dateStyle: 'medium',
+    timeStyle: 'short'
+  }).format(date);
 }
 
-function generateRandomRiskData(data) {
-  data.features.forEach(feature => {
-    const districtKey = normalizeDistrictName(getDistrictName(feature));
-
-    if (!districtKey || riskData[districtKey]) {
-      return;
-    }
-
-    riskData[districtKey] = generateRandomRisk();
-  });
-}
-
-// ==========================
-// FUNCTION WARNA
-// ==========================
-function getColor(value) {
-  return value > 80 ? '#800026' :
-         value > 60 ? '#BD0026' :
-         value > 40 ? '#E31A1C' :
-         value > 20 ? '#FC4E2A' :
-         value > 10 ? '#FD8D3C' :
-                      '#FED976';
-}
-
-// ==========================
-// STYLE POLYGON
-// ==========================
-function style(feature) {
-  let kec = getDistrictName(feature);
-  let value = getRiskValueByName(kec);
-
-  return {
-    fillColor: getColor(value),
-    weight: 1,
-    color: 'white',
-    fillOpacity: 0.7
-  };
-}
-
-// ==========================
-// INTERAKSI (HOVER)
-// ==========================
-function highlightFeature(e) {
-  var layer = e.target;
-
-  layer.setStyle({
-    weight: 3,
-    color: '#666',
-    fillOpacity: 0.9
-  });
-
-  if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
-    layer.bringToFront();
+function getRiskColor(category) {
+  switch ((category || '').toLowerCase()) {
+    case 'rendah':
+      return '#2f9e44';
+    case 'sedang':
+      return '#f0c419';
+    case 'tinggi':
+      return '#e03131';
+    default:
+      return '#94a3b8';
   }
 }
 
-function resetHighlight(e) {
-  geojson.resetStyle(e.target);
+function getRiskTone(category) {
+  switch ((category || '').toLowerCase()) {
+    case 'rendah':
+      return 'low';
+    case 'sedang':
+      return 'medium';
+    case 'tinggi':
+      return 'high';
+    default:
+      return 'low';
+  }
 }
 
-// ==========================
-// SETIAP FEATURE
-// ==========================
-function onEachFeature(feature, layer) {
-  let kec = getDistrictName(feature);
-  let value = getRiskValueByName(kec);
+function setStatus(text, tone) {
+  elements.dataStatus.textContent = text;
+  elements.dataStatus.className = 'status-pill';
 
-  layer.on({
-    mouseover: highlightFeature,
-    mouseout: resetHighlight
-  });
+  if (tone) {
+    elements.dataStatus.classList.add(tone);
+  }
+}
 
-  layer.bindPopup(
-    `<b>${kec}</b><br>Risiko: ${value}`
+function getPredictionByKey(key) {
+  return state.districtLookup.get(key);
+}
+
+function buildPredictionLookup(predictionPayload) {
+  state.meta = predictionPayload.meta;
+  state.districtLookup = new Map(
+    predictionPayload.districts.map(district => [
+      normalizeDistrictName(district.name),
+      district
+    ])
   );
 }
 
-// ==========================
-// LOAD GEOJSON
-// ==========================
-let geojson;
-let heatLayer;
-let heatPointLayer;
+function filterEastJakartaGeojson(geojson) {
+  return {
+    ...geojson,
+    features: geojson.features.filter(feature =>
+      state.districtLookup.has(normalizeDistrictName(getGeoDistrictName(feature)))
+    )
+  };
+}
 
-function buildHeatmapData(data) {
-  const districts = [];
+function getFeatureStyle(feature, isSelected) {
+  const district = getPredictionByKey(normalizeDistrictName(getGeoDistrictName(feature)));
+  const fillColor = district ? getRiskColor(district.riskCategory) : '#94a3b8';
 
-  L.geoJSON(data, {
-    onEachFeature: function(feature, layer) {
-      const districtName = getDistrictName(feature);
-      const districtKey = normalizeDistrictName(districtName);
-      const center = typeof layer.getCenter === 'function'
-        ? layer.getCenter()
-        : layer.getBounds().getCenter();
+  return {
+    fillColor: fillColor,
+    weight: isSelected ? 3 : 1.4,
+    color: isSelected ? '#17324d' : '#ffffff',
+    dashArray: isSelected ? '' : '3',
+    fillOpacity: isSelected ? 0.88 : 0.76
+  };
+}
 
-      if (!districtKey || !center) {
+function refreshDistrictStyles() {
+  if (!state.geojsonLayer) {
+    return;
+  }
+
+  state.geojsonLayer.eachLayer(layer => {
+    const featureKey = normalizeDistrictName(getGeoDistrictName(layer.feature));
+    const isSelected = featureKey === state.selectedKey;
+    layer.setStyle(getFeatureStyle(layer.feature, isSelected));
+  });
+}
+
+function renderPopupContent(prediction) {
+  return `
+    <strong>${prediction.label}</strong><br>
+    Risiko: ${prediction.riskCategory}<br>
+    Curah hujan: ${prediction.predictedRainfallMm} mm<br>
+    Drainase: ${prediction.drainageCondition}
+  `;
+}
+
+function renderEmptyDetail() {
+  elements.detailContent.innerHTML = `
+    <div class="empty-state">
+      Pilih kecamatan dari dropdown, daftar prioritas, atau klik langsung area pada peta untuk melihat detail wilayah.
+    </div>
+  `;
+}
+
+function renderDetailContent(district) {
+  const prediction = district.prediction;
+  const riskTone = getRiskTone(prediction.riskCategory);
+
+  elements.detailContent.innerHTML = `
+    <div class="detail-header">
+      <div>
+        <h3 class="detail-title">${prediction.label}</h3>
+        <p class="detail-copy">${prediction.summary}</p>
+      </div>
+      <span class="risk-badge ${riskTone}">${prediction.riskCategory}</span>
+    </div>
+
+    <div class="detail-meta">
+      <div class="detail-metric">
+        <span>Prediksi Curah Hujan</span>
+        <strong>${prediction.predictedRainfallMm} mm</strong>
+      </div>
+      <div class="detail-metric">
+        <span>Kondisi Drainase</span>
+        <strong>${prediction.drainageCondition}</strong>
+      </div>
+      <div class="detail-metric">
+        <span>Skor Risiko</span>
+        <strong>${Math.round(prediction.riskScore * 100)} / 100</strong>
+      </div>
+      <div class="detail-metric">
+        <span>Rekomendasi</span>
+        <strong>${prediction.recommendation}</strong>
+      </div>
+    </div>
+
+    <p class="detail-footnote">
+      Output ini merupakan simulasi data hasil prediksi yang telah disiapkan backend
+      untuk divisualisasikan oleh frontend sesuai arsitektur proposal.
+    </p>
+  `;
+}
+
+function updateMapSubtitle(selectedDistrict) {
+  if (selectedDistrict) {
+    elements.mapSubtitle.textContent =
+      `${selectedDistrict.prediction.label} sedang ditampilkan sebagai wilayah fokus dengan indikator risiko pendukung.`;
+    return;
+  }
+
+  elements.mapSubtitle.textContent =
+    `Menampilkan ${state.districts.length} kecamatan Jakarta Timur berdasarkan simulasi output backend terbaru.`;
+}
+
+function selectDistrict(key, options) {
+  const config = {
+    flyTo: false,
+    openPopup: false,
+    ...options
+  };
+
+  const district = state.districts.find(item => item.key === key);
+
+  if (!district) {
+    return;
+  }
+
+  state.selectedKey = key;
+  elements.districtSelect.value = key;
+
+  refreshDistrictStyles();
+  renderDetailContent(district);
+  updateMapSubtitle(district);
+
+  if (config.flyTo) {
+    map.flyToBounds(district.layer.getBounds(), {
+      padding: [36, 36],
+      duration: 0.8
+    });
+  }
+
+  if (config.openPopup) {
+    district.layer.openPopup();
+  }
+}
+
+function populateDistrictSelect() {
+  const options = state.districts
+    .slice()
+    .sort((a, b) => a.prediction.label.localeCompare(b.prediction.label, 'id'))
+    .map(district =>
+      `<option value="${district.key}">${district.prediction.label}</option>`
+    );
+
+  elements.districtSelect.innerHTML = `
+    <option value="">Pilih kecamatan</option>
+    ${options.join('')}
+  `;
+}
+
+function renderHotspotList() {
+  const topDistricts = state.districts
+    .slice()
+    .sort((a, b) => b.prediction.riskScore - a.prediction.riskScore)
+    .slice(0, 5);
+
+  elements.hotspotList.innerHTML = topDistricts
+    .map(district => `
+      <li>
+        <button class="hotspot-item" type="button" data-district-key="${district.key}">
+          <span class="hotspot-copy">
+            <strong>${district.prediction.label}</strong>
+            <small>${district.prediction.predictedRainfallMm} mm | Drainase ${district.prediction.drainageCondition}</small>
+          </span>
+          <span class="risk-badge ${getRiskTone(district.prediction.riskCategory)}">${district.prediction.riskCategory}</span>
+        </button>
+      </li>
+    `)
+    .join('');
+}
+
+function updateSummaryStats() {
+  const totalDistricts = state.districts.length;
+  const highRiskCount = state.districts.filter(
+    district => district.prediction.riskCategory === 'Tinggi'
+  ).length;
+  const averageRainfall = totalDistricts === 0
+    ? 0
+    : Math.round(
+        state.districts.reduce(
+          (sum, district) => sum + district.prediction.predictedRainfallMm,
+          0
+        ) / totalDistricts
+      );
+
+  elements.statDistrictCount.textContent = formatNumber(totalDistricts);
+  elements.statHighRiskCount.textContent = formatNumber(highRiskCount);
+  elements.statAverageRainfall.textContent = `${formatNumber(averageRainfall)} mm`;
+  elements.statUpdatedAt.textContent = formatUpdatedAt(state.meta.updatedAt);
+  elements.statRefreshInterval.textContent =
+    `Interval pembaruan simulasi: ${state.meta.refreshInterval}`;
+  elements.systemSources.textContent =
+    `Sumber simulasi: ${state.meta.rainfallSource} untuk curah hujan dan ${state.meta.drainageSource} untuk indikator drainase.`;
+}
+
+function createHeatOverlay() {
+  const heatPoints = state.districts.map(district => [
+    district.center.lat,
+    district.center.lng,
+    district.prediction.riskScore
+  ]);
+
+  const heatLayer = L.heatLayer(heatPoints, {
+    radius: 42,
+    blur: 30,
+    minOpacity: 0.4,
+    maxZoom: 13,
+    gradient: {
+      0.2: '#2f9e44',
+      0.55: '#f0c419',
+      1.0: '#e03131'
+    }
+  });
+
+  const labelLayer = L.layerGroup(
+    state.districts.map(district => {
+      const marker = L.circleMarker(district.center, {
+        radius: 7,
+        weight: 1.5,
+        color: '#ffffff',
+        fillColor: getRiskColor(district.prediction.riskCategory),
+        fillOpacity: 0.98
+      });
+
+      marker.bindTooltip(district.prediction.label, {
+        permanent: true,
+        direction: 'top',
+        offset: [0, -12],
+        className: 'heat-label'
+      });
+
+      marker.bindPopup(renderPopupContent(district.prediction));
+      marker.on('click', () => {
+        selectDistrict(district.key, {
+          flyTo: true,
+          openPopup: false
+        });
+      });
+
+      return marker;
+    })
+  );
+
+  state.heatOverlay = L.layerGroup([heatLayer, labelLayer]).addTo(map);
+}
+
+function initializeMap(filteredGeojson) {
+  state.districts = [];
+
+  state.geojsonLayer = L.geoJSON(filteredGeojson, {
+    style: feature => getFeatureStyle(feature, false),
+    onEachFeature: (feature, layer) => {
+      const key = normalizeDistrictName(getGeoDistrictName(feature));
+      const prediction = getPredictionByKey(key);
+
+      if (!prediction) {
         return;
       }
 
-      districts.push({
-        name: districtName,
-        key: districtKey,
-        center: center,
-        risk: getRiskValueByName(districtName)
+      const district = {
+        key: key,
+        prediction: prediction,
+        layer: layer,
+        center: layer.getBounds().getCenter()
+      };
+
+      state.districts.push(district);
+
+      layer.bindPopup(renderPopupContent(prediction));
+      layer.on({
+        mouseover: event => {
+          event.target.setStyle({
+            weight: 3,
+            color: '#17324d',
+            fillOpacity: 0.9
+          });
+
+          if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+            event.target.bringToFront();
+          }
+        },
+        mouseout: refreshDistrictStyles,
+        click: () => {
+          selectDistrict(key, {
+            flyTo: true,
+            openPopup: true
+          });
+        }
+      });
+    }
+  }).addTo(map);
+
+  createHeatOverlay();
+
+  L.control.layers(
+    {
+      'OpenStreetMap': baseMap
+    },
+    {
+      'Peta Tematik Risiko': state.geojsonLayer,
+      'Overlay Heatmap + Label': state.heatOverlay
+    },
+    {
+      collapsed: false
+    }
+  ).addTo(map);
+
+  state.bounds = state.geojsonLayer.getBounds();
+  map.fitBounds(state.bounds, { padding: [26, 26] });
+}
+
+function bindInteractions() {
+  elements.districtSelect.addEventListener('change', event => {
+    const key = event.target.value;
+
+    if (!key) {
+      state.selectedKey = null;
+      refreshDistrictStyles();
+      updateMapSubtitle();
+      renderEmptyDetail();
+      return;
+    }
+
+    selectDistrict(key, {
+      flyTo: true,
+      openPopup: true
+    });
+  });
+
+  elements.resetViewButton.addEventListener('click', () => {
+    if (state.bounds) {
+      map.flyToBounds(state.bounds, {
+        padding: [26, 26],
+        duration: 0.8
       });
     }
   });
 
-  return districts;
-}
+  elements.hotspotList.addEventListener('click', event => {
+    const button = event.target.closest('[data-district-key]');
 
-function createHeatPointLayer(districts) {
-  return L.layerGroup(
-    districts.map(district => L.circleMarker(district.center, {
-      radius: 6,
-      weight: 1.5,
-      color: '#ffffff',
-      fillColor: getColor(district.risk),
-      fillOpacity: 0.95
-    })
-      .bindTooltip(district.name, {
-        direction: 'top',
-        offset: [0, -8],
-        opacity: 1,
-        className: 'heat-tooltip'
-      })
-      .bindPopup(`<b>${district.name}</b><br>Risiko acak: ${district.risk}`))
-  );
-}
+    if (!button) {
+      return;
+    }
 
-fetch('data/jkt.geojson')
-  .then(res => res.json())
-  .then(data => {
-    generateRandomRiskData(data);
-
-    geojson = L.geoJSON(data, {
-      style: style,
-      onEachFeature: onEachFeature
-    }).addTo(map);
-
-    const districts = buildHeatmapData(data);
-
-    heatLayer = L.heatLayer(districts.map(district => [
-      district.center.lat,
-      district.center.lng,
-      district.risk / 100
-    ]), {
-      radius: 38,
-      blur: 28,
-      maxZoom: 13,
-      minOpacity: 0.45,
-      gradient: {
-        0.2: '#fed976',
-        0.4: '#fd8d3c',
-        0.6: '#fc4e2a',
-        0.8: '#bd0026',
-        1.0: '#800026'
-      }
+    selectDistrict(button.dataset.districtKey, {
+      flyTo: true,
+      openPopup: true
     });
-
-    heatPointLayer = createHeatPointLayer(districts);
-
-    const heatmapOverlay = L.layerGroup([heatLayer, heatPointLayer]).addTo(map);
-
-    L.control.layers(
-      {
-        'OpenStreetMap': baseMap
-      },
-      {
-        'Risiko per Kecamatan': geojson,
-        'Heatmap Risiko + Nama Daerah': heatmapOverlay
-      },
-      {
-        collapsed: false
-      }
-    ).addTo(map);
-
-    map.fitBounds(geojson.getBounds(), { padding: [20, 20] });
-  })
-  .catch(error => {
-    console.error('Gagal memuat data GeoJSON:', error);
   });
+}
 
-// ==========================
-// INFO HEATMAP
-// ==========================
-var mapInfo = L.control({position: 'topright'});
+function fetchJson(url) {
+  return fetch(url).then(response => {
+    if (!response.ok) {
+      throw new Error(`Gagal memuat ${url} (${response.status})`);
+    }
 
-mapInfo.onAdd = function () {
-  var div = L.DomUtil.create('div', 'map-info');
-  div.innerHTML = `
-    <strong>Heatmap Risiko</strong>
-    Titik heatmap menampilkan nama daerah asli dari GeoJSON. Nilai risiko dibuat acak ulang setiap refresh halaman.
-  `;
+    return response.json();
+  });
+}
 
-  L.DomEvent.disableClickPropagation(div);
+function bootstrapApp() {
+  setStatus('Memuat data', '');
 
-  return div;
-};
+  Promise.all([
+    fetchJson('data/jkt.geojson'),
+    fetchJson('data/east-jakarta-predictions.json')
+  ])
+    .then(([geojson, predictionPayload]) => {
+      buildPredictionLookup(predictionPayload);
 
-mapInfo.addTo(map);
+      const filteredGeojson = filterEastJakartaGeojson(geojson);
 
-// ==========================
-// LEGEND
-// ==========================
-var legend = L.control({position: 'bottomright'});
+      if (filteredGeojson.features.length === 0) {
+        throw new Error('Tidak ada fitur Jakarta Timur yang cocok dengan data prediksi.');
+      }
 
-legend.onAdd = function () {
-  var div = L.DomUtil.create('div', 'legend'),
-      grades = [0, 10, 20, 40, 60, 80];
+      initializeMap(filteredGeojson);
+      populateDistrictSelect();
+      updateSummaryStats();
+      renderHotspotList();
+      updateMapSubtitle();
+      setStatus('Data siap', 'success');
 
-  div.innerHTML = '<strong>Skala Risiko</strong>';
+      const primaryDistrict = state.districts
+        .slice()
+        .sort((a, b) => b.prediction.riskScore - a.prediction.riskScore)[0];
 
-  for (var i = 0; i < grades.length; i++) {
-    div.innerHTML +=
-      '<i style="background:' + getColor(grades[i] + 1) + '"></i> ' +
-      grades[i] + (grades[i + 1] ? '&ndash;' + grades[i + 1] + '<br>' : '+');
-  }
+      if (primaryDistrict) {
+        selectDistrict(primaryDistrict.key, {
+          flyTo: false,
+          openPopup: false
+        });
+      }
+    })
+    .catch(error => {
+      console.error('Gagal memuat Web-GIS:', error);
+      elements.mapSubtitle.textContent =
+        'Terjadi kendala saat memuat data peta atau data prediksi.';
+      elements.detailContent.innerHTML = `
+        <div class="empty-state">
+          Gagal memuat data. Pastikan file GeoJSON dan JSON prediksi tersedia lalu jalankan ulang melalui local server.
+        </div>
+      `;
+      setStatus('Gagal memuat', 'error');
+    });
+}
 
-  L.DomEvent.disableClickPropagation(div);
-
-  return div;
-};
-
-legend.addTo(map);
+bindInteractions();
+bootstrapApp();

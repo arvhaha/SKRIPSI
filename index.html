@@ -1,25 +1,154 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
-  <title>WebGIS Risiko Banjir</title>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebGIS Prediksi Risiko Banjir Jakarta Timur</title>
 
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <div class="app-shell">
+    <header class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">Web-GIS Prediksi Risiko Banjir</p>
+        <h1>Jakarta Timur</h1>
+        <p class="hero-text">
+          Antarmuka ini dirapikan mengikuti proposal penelitian: fokus pada tingkat kecamatan,
+          menampilkan peta tematik risiko, detail wilayah, dan simulasi hasil prediksi hybrid
+          LSTM + XGBoost yang disajikan terpisah dari frontend.
+        </p>
+      </div>
 
-<div class="page-header">
-  <h2>Peta Heatmap Risiko Banjir DKI Jakarta</h2>
-  <p class="subtitle">Setiap daerah memakai nama asli dari GeoJSON dan nilai risiko disimulasikan secara acak setiap kali halaman dimuat ulang.</p>
-</div>
+      <div class="hero-stack">
+        <article class="hero-card">
+          <span class="hero-label">Model Prediksi</span>
+          <strong>Hybrid LSTM + XGBoost</strong>
+          <p>Frontend bertugas memvisualisasikan output risiko yang sudah disiapkan.</p>
+        </article>
+        <article class="hero-card">
+          <span class="hero-label">Wilayah Kajian</span>
+          <strong>10 Kecamatan Jakarta Timur</strong>
+          <p>Unit analisis mengikuti batasan proposal pada level kecamatan.</p>
+        </article>
+        <article class="hero-card">
+          <span class="hero-label">Mode Data</span>
+          <strong>Simulasi Output Backend</strong>
+          <p>Struktur data meniru hasil prediksi yang dikirim backend ke Web-GIS.</p>
+        </article>
+      </div>
+    </header>
 
-<div id="map"></div>
+    <section class="control-strip">
+      <div class="panel controls-panel">
+        <div class="panel-heading">
+          <h2>Kontrol Wilayah</h2>
+          <p>Pilih kecamatan untuk melihat detail wilayah dan mengarahkan tampilan peta.</p>
+        </div>
 
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-<script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
-<script src="script.js"></script>
+        <div class="controls-row">
+          <label class="field" for="districtSelect">
+            <span>Kecamatan</span>
+            <select id="districtSelect">
+              <option value="">Memuat data...</option>
+            </select>
+          </label>
 
+          <button id="resetViewButton" type="button">Reset Tampilan</button>
+        </div>
+
+        <div class="legend-inline" aria-label="Legenda tingkat risiko">
+          <span class="legend-chip low">Risiko Rendah</span>
+          <span class="legend-chip medium">Risiko Sedang</span>
+          <span class="legend-chip high">Risiko Tinggi</span>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <article class="stat-card">
+          <span>Total Kecamatan</span>
+          <strong id="statDistrictCount">-</strong>
+          <small>Wilayah administratif yang divisualisasikan</small>
+        </article>
+        <article class="stat-card">
+          <span>Risiko Tinggi</span>
+          <strong id="statHighRiskCount">-</strong>
+          <small>Kecamatan dengan prioritas mitigasi</small>
+        </article>
+        <article class="stat-card">
+          <span>Rata-Rata Curah Hujan</span>
+          <strong id="statAverageRainfall">-</strong>
+          <small>Prediksi hujan sebagai indikator temporal</small>
+        </article>
+        <article class="stat-card">
+          <span>Pembaruan Data</span>
+          <strong id="statUpdatedAt">-</strong>
+          <small id="statRefreshInterval">Menunggu metadata pembaruan</small>
+        </article>
+      </div>
+    </section>
+
+    <section class="content-grid">
+      <div class="map-panel">
+        <div class="map-panel-head">
+          <div>
+            <h2>Peta Tematik Risiko Banjir</h2>
+            <p id="mapSubtitle">Memuat data risiko banjir per kecamatan Jakarta Timur.</p>
+          </div>
+          <div class="status-pill" id="dataStatus">Memuat data</div>
+        </div>
+
+        <div id="map"></div>
+      </div>
+
+      <aside class="side-panel">
+        <section class="panel detail-panel">
+          <div class="panel-heading">
+            <h2>Detail Wilayah</h2>
+            <p>Informasi detail ditampilkan ketika wilayah dipilih dari dropdown atau peta.</p>
+          </div>
+          <div id="detailContent" class="detail-content">
+            <div class="empty-state">
+              Data wilayah akan tampil di sini setelah peta berhasil dimuat.
+            </div>
+          </div>
+        </section>
+
+        <section class="panel insights-panel">
+          <div class="panel-heading">
+            <h2>Ringkasan Sistem</h2>
+            <p>Disusun mengikuti alur proposal: visualisasi di frontend, pemodelan berada di backend.</p>
+          </div>
+
+          <div class="system-notes">
+            <div class="note-card">
+              <strong>Input Prediksi</strong>
+              <p id="systemSources">BMKG dan data drainase DSDA digunakan sebagai sumber indikator pada simulasi ini.</p>
+            </div>
+            <div class="note-card">
+              <strong>Visualisasi</strong>
+              <p>Layer utama berupa peta tematik hijau-kuning-merah. Heatmap tetap tersedia sebagai overlay pendukung konsentrasi risiko.</p>
+            </div>
+          </div>
+
+          <div class="hotspot-section">
+            <div class="hotspot-head">
+              <h3>Prioritas Wilayah</h3>
+              <span>Top skor risiko</span>
+            </div>
+            <ul id="hotspotList" class="hotspot-list"></ul>
+          </div>
+        </section>
+      </aside>
+    </section>
+  </div>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>

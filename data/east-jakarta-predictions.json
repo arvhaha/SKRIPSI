@@ -1,0 +1,111 @@
+{
+  "meta": {
+    "model": "Hybrid LSTM + XGBoost",
+    "updatedAt": "2026-04-07T09:00:00+07:00",
+    "refreshInterval": "1 jam",
+    "rainfallSource": "BMKG (simulasi)",
+    "drainageSource": "DSDA DKI Jakarta (simulasi)"
+  },
+  "districts": [
+    {
+      "name": "CAKUNG",
+      "label": "Cakung",
+      "predictedRainfallMm": 156,
+      "drainageCondition": "Buruk",
+      "riskCategory": "Tinggi",
+      "riskScore": 0.91,
+      "summary": "Prediksi hujan sangat tinggi dengan drainase yang masih menjadi bottleneck di sejumlah titik permukiman dan koridor jalan utama.",
+      "recommendation": "Prioritaskan mitigasi lapangan dan pemantauan genangan."
+    },
+    {
+      "name": "CIPAYUNG",
+      "label": "Cipayung",
+      "predictedRainfallMm": 82,
+      "drainageCondition": "Sedang",
+      "riskCategory": "Sedang",
+      "riskScore": 0.59,
+      "summary": "Curah hujan diprediksi meningkat, namun kondisi drainase masih relatif menahan eskalasi risiko ke kategori tinggi.",
+      "recommendation": "Lakukan pemantauan berkala pada titik limpasan lokal."
+    },
+    {
+      "name": "CIRACAS",
+      "label": "Ciracas",
+      "predictedRainfallMm": 121,
+      "drainageCondition": "Sedang",
+      "riskCategory": "Tinggi",
+      "riskScore": 0.78,
+      "summary": "Kombinasi hujan tinggi dan kapasitas drainase yang belum optimal mendorong wilayah ini masuk prioritas tinggi.",
+      "recommendation": "Siapkan respons cepat pada area padat dan cek saluran sekunder."
+    },
+    {
+      "name": "DUREN SAWIT",
+      "label": "Duren Sawit",
+      "predictedRainfallMm": 137,
+      "drainageCondition": "Buruk",
+      "riskCategory": "Tinggi",
+      "riskScore": 0.84,
+      "summary": "Kepadatan kawasan terbangun dan kondisi saluran drainase memperbesar kerentanan ketika hujan intensitas tinggi terjadi.",
+      "recommendation": "Fokuskan mitigasi pada wilayah permukiman padat dan jaringan drainase tersier."
+    },
+    {
+      "name": "JATINEGARA",
+      "label": "Jatinegara",
+      "predictedRainfallMm": 149,
+      "drainageCondition": "Buruk",
+      "riskCategory": "Tinggi",
+      "riskScore": 0.88,
+      "summary": "Output prediksi menunjukkan tekanan tinggi pada sistem drainase sehingga wilayah ini menjadi salah satu hotspot utama.",
+      "recommendation": "Prioritaskan kesiapsiagaan operasional dan komunikasi risiko."
+    },
+    {
+      "name": "KRAMAT JATI",
+      "label": "Kramat Jati",
+      "predictedRainfallMm": 96,
+      "drainageCondition": "Sedang",
+      "riskCategory": "Sedang",
+      "riskScore": 0.63,
+      "summary": "Risiko berada pada tingkat menengah dengan kebutuhan pengawasan genangan pada titik rawan berulang.",
+      "recommendation": "Lakukan inspeksi drainase lokal dan monitor hujan lanjutan."
+    },
+    {
+      "name": "MAKASAR",
+      "label": "Makasar",
+      "predictedRainfallMm": 74,
+      "drainageCondition": "Baik",
+      "riskCategory": "Rendah",
+      "riskScore": 0.39,
+      "summary": "Curah hujan masih dalam rentang moderat dan kondisi drainase relatif mendukung sehingga risiko lebih terkendali.",
+      "recommendation": "Pertahankan pemantauan rutin dan pembersihan saluran."
+    },
+    {
+      "name": "MATRAMAN",
+      "label": "Matraman",
+      "predictedRainfallMm": 89,
+      "drainageCondition": "Sedang",
+      "riskCategory": "Sedang",
+      "riskScore": 0.54,
+      "summary": "Wilayah menunjukkan risiko menengah dengan sensitivitas terhadap hujan lanjutan dan kepadatan kawasan.",
+      "recommendation": "Pantau titik genangan historis pada jam hujan puncak."
+    },
+    {
+      "name": "PASAR REBO",
+      "label": "Pasar Rebo",
+      "predictedRainfallMm": 68,
+      "drainageCondition": "Baik",
+      "riskCategory": "Rendah",
+      "riskScore": 0.35,
+      "summary": "Prediksi hujan lebih rendah dibanding kecamatan lain dan indikator drainase masih berada pada kondisi yang mendukung.",
+      "recommendation": "Lanjutkan pemeliharaan preventif tanpa eskalasi khusus."
+    },
+    {
+      "name": "PULOGADUNG",
+      "label": "Pulogadung",
+      "predictedRainfallMm": 133,
+      "drainageCondition": "Buruk",
+      "riskCategory": "Tinggi",
+      "riskScore": 0.81,
+      "summary": "Kawasan terbangun padat dan prediksi hujan tinggi mendorong Pulogadung berada pada kelompok risiko tinggi.",
+      "recommendation": "Perkuat pemantauan koridor industri, jalan, dan kawasan padat."
+    }
+  ]
+}
