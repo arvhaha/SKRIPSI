@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Input Data Risiko Banjir</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body id="top">
+  <header class="site-header">
+    <div class="nav-inner admin-nav">
+      <a class="brand" href="index.html" aria-label="Kembali ke halaman peta">
+        <span class="brand-icon">FG</span>
+        <span>
+          <strong>FloodGIS</strong>
+          <small>Admin Data</small>
+        </span>
+      </a>
+
+      <a class="nav-signin nav-link-wide" href="index.html">Lihat Peta</a>
+    </div>
+  </header>
+
+  <main class="app-shell admin-shell">
+    <header class="admin-hero">
+      <div>
+        <p class="eyebrow">Panel Admin</p>
+        <h1>Input Data Prediksi Risiko Banjir</h1>
+        <p class="hero-text">
+          Gunakan halaman ini untuk mengubah data prediksi per kecamatan. Pada versi statis,
+          data disimpan di browser melalui localStorage dan langsung dipakai oleh halaman peta.
+        </p>
+      </div>
+      <div class="admin-status-card">
+        <span>Status Data</span>
+        <strong id="adminDataStatus">Memuat...</strong>
+        <small id="adminUpdatedAt">Menunggu data</small>
+      </div>
+    </header>
+
+    <section class="admin-grid">
+      <form id="predictionForm" class="panel admin-form">
+        <div class="panel-heading">
+          <h2>Form Input Kecamatan</h2>
+          <p>Pilih kecamatan, isi indikator, lalu simpan perubahan.</p>
+        </div>
+
+        <div class="form-grid">
+          <label class="field" for="adminDistrict">
+            <span>Kecamatan</span>
+            <select id="adminDistrict" required></select>
+          </label>
+
+          <label class="field" for="predictedRainfallMm">
+            <span>Curah Hujan Prediksi (mm)</span>
+            <input id="predictedRainfallMm" type="number" min="0" max="500" step="1" required>
+          </label>
+
+          <label class="field" for="drainageCondition">
+            <span>Kondisi Drainase</span>
+            <select id="drainageCondition" required>
+              <option value="Baik">Baik</option>
+              <option value="Sedang">Sedang</option>
+              <option value="Buruk">Buruk</option>
+            </select>
+          </label>
+
+          <label class="field" for="riskCategory">
+            <span>Kategori Risiko</span>
+            <select id="riskCategory" required>
+              <option value="Rendah">Rendah</option>
+              <option value="Sedang">Sedang</option>
+              <option value="Tinggi">Tinggi</option>
+            </select>
+          </label>
+
+          <label class="field" for="riskScore">
+            <span>Skor Risiko (0-100)</span>
+            <input id="riskScore" type="number" min="0" max="100" step="1" required>
+          </label>
+
+          <label class="field form-wide" for="summary">
+            <span>Ringkasan Kondisi</span>
+            <textarea id="summary" rows="4" required></textarea>
+          </label>
+
+          <label class="field form-wide" for="recommendation">
+            <span>Rekomendasi</span>
+            <textarea id="recommendation" rows="3" required></textarea>
+          </label>
+        </div>
+
+        <div class="admin-actions">
+          <button type="submit">Simpan Data</button>
+          <button id="autoClassifyButton" class="button-secondary" type="button">Hitung Kategori</button>
+          <button id="resetFormButton" class="button-ghost" type="button">Reset Form</button>
+        </div>
+      </form>
+
+      <aside class="panel admin-help">
+        <div class="panel-heading">
+          <h2>Panduan Input</h2>
+          <p>Data yang disimpan akan menjadi sumber utama di halaman peta pada browser ini.</p>
+        </div>
+
+        <div class="help-list">
+          <div>
+            <strong>Rendah</strong>
+            <p>Skor 0-39, biasanya curah hujan dan drainase masih terkendali.</p>
+          </div>
+          <div>
+            <strong>Sedang</strong>
+            <p>Skor 40-69, perlu pemantauan berkala pada titik rawan.</p>
+          </div>
+          <div>
+            <strong>Tinggi</strong>
+            <p>Skor 70-100, perlu prioritas mitigasi dan kesiapsiagaan.</p>
+          </div>
+        </div>
+
+        <div class="admin-actions stacked">
+          <button id="exportJsonButton" type="button">Export JSON</button>
+          <button id="resetStorageButton" class="button-ghost danger" type="button">Hapus Data Admin</button>
+        </div>
+      </aside>
+    </section>
+
+    <section class="panel admin-table-panel">
+      <div class="panel-heading table-heading">
+        <div>
+          <h2>Data Prediksi Saat Ini</h2>
+          <p>Preview semua kecamatan yang akan ditampilkan di WebGIS.</p>
+        </div>
+        <div id="saveMessage" class="save-message" aria-live="polite"></div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Kecamatan</th>
+              <th>Curah Hujan</th>
+              <th>Drainase</th>
+              <th>Risiko</th>
+              <th>Skor</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="predictionTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <section class="footer-contact">
+        <p class="footer-kicker">Kontak Kami</p>
+
+        <div class="footer-contact-list">
+          <div class="footer-contact-item">
+            <span class="footer-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" role="presentation">
+                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5z"/>
+              </svg>
+            </span>
+            <p>Jl. Angkasa I No.2 Kemayoran, Jakarta Pusat 10610, PO Box 3540 Jkt.</p>
+          </div>
+
+          <div class="footer-contact-item">
+            <span class="footer-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" role="presentation">
+                <path d="M6.62 10.79a15.05 15.05 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1-.24c1.12.37 2.33.56 3.59.56a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1C10.61 21 3 13.39 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.26.19 2.47.56 3.59a1 1 0 0 1-.25 1z"/>
+              </svg>
+            </span>
+            <p>Contact Center (021) 196<br>Faks (021) 4246703</p>
+          </div>
+
+          <div class="footer-contact-item">
+            <span class="footer-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" role="presentation">
+                <path d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 4-8 5-8-5V6l8 5 8-5z"/>
+              </svg>
+            </span>
+            <p>cc196[at]bmkg.go.id</p>
+          </div>
+        </div>
+      </section>
+
+      <div class="footer-bottom">
+        <p class="footer-copy">&copy; 2026 - Badan Meteorologi, Klimatologi, dan Geofisika</p>
+        <div class="footer-links">
+          <a href="#top">Peta Situs</a>
+          <a href="#top">Ketentuan Penggunaan</a>
+        </div>
+        <a class="back-to-top" href="#top">Kembali ke atas</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="admin.js"></script>
+</body>
+</html>

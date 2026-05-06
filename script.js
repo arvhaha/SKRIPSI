@@ -6,6 +6,8 @@ const baseMap = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
 
 L.control.scale({ imperial: false }).addTo(map);
 
+const STORAGE_KEY = 'floodgis_predictions';
+
 const elements = {
   districtSelect: document.getElementById('districtSelect'),
   resetViewButton: document.getElementById('resetViewButton'),
@@ -16,9 +18,7 @@ const elements = {
   statRefreshInterval: document.getElementById('statRefreshInterval'),
   mapSubtitle: document.getElementById('mapSubtitle'),
   dataStatus: document.getElementById('dataStatus'),
-  detailContent: document.getElementById('detailContent'),
-  hotspotList: document.getElementById('hotspotList'),
-  systemSources: document.getElementById('systemSources')
+  detailContent: document.getElementById('detailContent')
 };
 
 const state = {
@@ -108,6 +108,27 @@ function buildPredictionLookup(predictionPayload) {
   );
 }
 
+function getStoredPredictionPayload() {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+
+    if (!stored) {
+      return null;
+    }
+
+    const parsed = JSON.parse(stored);
+
+    if (!parsed || !Array.isArray(parsed.districts)) {
+      return null;
+    }
+
+    return parsed;
+  } catch (error) {
+    console.warn('Data admin tidak valid:', error);
+    return null;
+  }
+}
+
 function filterEastJakartaGeojson(geojson) {
   return {
     ...geojson,
@@ -154,7 +175,7 @@ function renderPopupContent(prediction) {
 function renderEmptyDetail() {
   elements.detailContent.innerHTML = `
     <div class="empty-state">
-      Pilih kecamatan dari dropdown, daftar prioritas, atau klik langsung area pada peta untuk melihat detail wilayah.
+      Pilih kecamatan dari dropdown atau klik langsung area pada peta untuk melihat detail wilayah.
     </div>
   `;
 }
@@ -255,27 +276,6 @@ function populateDistrictSelect() {
   `;
 }
 
-function renderHotspotList() {
-  const topDistricts = state.districts
-    .slice()
-    .sort((a, b) => b.prediction.riskScore - a.prediction.riskScore)
-    .slice(0, 5);
-
-  elements.hotspotList.innerHTML = topDistricts
-    .map(district => `
-      <li>
-        <button class="hotspot-item" type="button" data-district-key="${district.key}">
-          <span class="hotspot-copy">
-            <strong>${district.prediction.label}</strong>
-            <small>${district.prediction.predictedRainfallMm} mm | Drainase ${district.prediction.drainageCondition}</small>
-          </span>
-          <span class="risk-badge ${getRiskTone(district.prediction.riskCategory)}">${district.prediction.riskCategory}</span>
-        </button>
-      </li>
-    `)
-    .join('');
-}
-
 function updateSummaryStats() {
   const totalDistricts = state.districts.length;
   const highRiskCount = state.districts.filter(
@@ -296,8 +296,6 @@ function updateSummaryStats() {
   elements.statUpdatedAt.textContent = formatUpdatedAt(state.meta.updatedAt);
   elements.statRefreshInterval.textContent =
     `Interval pembaruan simulasi: ${state.meta.refreshInterval}`;
-  elements.systemSources.textContent =
-    `Sumber simulasi: ${state.meta.rainfallSource} untuk curah hujan dan ${state.meta.drainageSource} untuk indikator drainase.`;
 }
 
 function createHeatOverlay() {
@@ -443,18 +441,6 @@ function bindInteractions() {
     }
   });
 
-  elements.hotspotList.addEventListener('click', event => {
-    const button = event.target.closest('[data-district-key]');
-
-    if (!button) {
-      return;
-    }
-
-    selectDistrict(button.dataset.districtKey, {
-      flyTo: true,
-      openPopup: true
-    });
-  });
 }
 
 function fetchJson(url) {
@@ -475,7 +461,9 @@ function bootstrapApp() {
     fetchJson('data/east-jakarta-predictions.json')
   ])
     .then(([geojson, predictionPayload]) => {
-      buildPredictionLookup(predictionPayload);
+      const activePredictionPayload = getStoredPredictionPayload() || predictionPayload;
+
+      buildPredictionLookup(activePredictionPayload);
 
       const filteredGeojson = filterEastJakartaGeojson(geojson);
 
@@ -486,7 +474,6 @@ function bootstrapApp() {
       initializeMap(filteredGeojson);
       populateDistrictSelect();
       updateSummaryStats();
-      renderHotspotList();
       updateMapSubtitle();
       setStatus('Data siap', 'success');
 
