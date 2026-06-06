@@ -1,0 +1,4 @@
+target,training_mode,model,accuracy,balanced_accuracy,macro_f1
+rain_category_5class,hydro_plus_bmkg,random_forest,0.48484848484848486,0.24242424242424243,0.16326530612244897
+rain_category_5class,hydro_plus_bmkg,xgboost,0.45454545454545453,0.2701048951048951,0.23012718600953896
+rain_category_5class,hydro_plus_bmkg,extra_trees,0.4090909090909091,0.20454545454545456,0.12413793103448276
