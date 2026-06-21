@@ -67,6 +67,28 @@ function getStoredPayload() {
   }
 }
 
+function getDatasetId(payload) {
+  return payload && payload.meta ? payload.meta.datasetId || '' : '';
+}
+
+function resolveActivePayload(defaultPayload) {
+  const storedPayload = getStoredPayload();
+
+  if (!storedPayload) {
+    return defaultPayload;
+  }
+
+  const defaultDatasetId = getDatasetId(defaultPayload);
+  const storedDatasetId = getDatasetId(storedPayload);
+
+  if (defaultDatasetId && storedDatasetId !== defaultDatasetId) {
+    localStorage.removeItem(STORAGE_KEY);
+    return defaultPayload;
+  }
+
+  return storedPayload;
+}
+
 function persistPayload() {
   state.payload.meta.updatedAt = new Date().toISOString();
   state.payload.meta.source = 'admin-local-storage';
@@ -252,7 +274,7 @@ function fetchJson(url) {
 function initializeAdmin() {
   fetchJson('data/east-jakarta-predictions.json')
     .then(defaultPayload => {
-      state.payload = cloneData(getStoredPayload() || defaultPayload);
+      state.payload = cloneData(resolveActivePayload(defaultPayload));
       populateDistrictOptions();
       fillForm(getSelectedDistrict());
       renderTable();

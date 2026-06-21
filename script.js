@@ -1,7 +1,9 @@
 const map = L.map('map').setView([-6.225, 106.925], 11);
 
-const baseMap = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution: '&copy; OpenStreetMap contributors'
+const baseMap = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+  attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+  subdomains: 'abcd',
+  maxZoom: 20
 }).addTo(map);
 
 L.control.scale({ imperial: false }).addTo(map);
@@ -59,7 +61,41 @@ function formatUpdatedAt(value) {
   }).format(date);
 }
 
-function getRiskColor(category) {
+function formatPercent(value) {
+  const numericValue = Number(value);
+
+  if (Number.isNaN(numericValue)) {
+    return 'Tidak tersedia';
+  }
+
+  return `${numericValue.toLocaleString('id-ID', {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1
+  })}%`;
+}
+
+function getRiskColor(value) {
+  const prediction = typeof value === 'object' && value !== null ? value : null;
+  const level = Number(prediction?.webgisLevel);
+
+  if (level === 4) {
+    return '#e03131';
+  }
+
+  if (level === 3) {
+    return '#f76707';
+  }
+
+  if (level === 2) {
+    return '#f0c419';
+  }
+
+  if (level === 1) {
+    return '#2f9e44';
+  }
+
+  const category = prediction ? prediction.riskCategory : value;
+
   switch ((category || '').toLowerCase()) {
     case 'rendah':
       return '#2f9e44';
@@ -72,7 +108,28 @@ function getRiskColor(category) {
   }
 }
 
-function getRiskTone(category) {
+function getRiskTone(value) {
+  const prediction = typeof value === 'object' && value !== null ? value : null;
+  const level = Number(prediction?.webgisLevel);
+
+  if (level === 4) {
+    return 'high';
+  }
+
+  if (level === 3) {
+    return 'watch';
+  }
+
+  if (level === 2) {
+    return 'medium';
+  }
+
+  if (level === 1) {
+    return 'low';
+  }
+
+  const category = prediction ? prediction.riskCategory : value;
+
   switch ((category || '').toLowerCase()) {
     case 'rendah':
       return 'low';
@@ -129,6 +186,28 @@ function getStoredPredictionPayload() {
   }
 }
 
+function getDatasetId(payload) {
+  return payload && payload.meta ? payload.meta.datasetId || '' : '';
+}
+
+function resolveActivePredictionPayload(defaultPayload) {
+  const storedPayload = getStoredPredictionPayload();
+
+  if (!storedPayload) {
+    return defaultPayload;
+  }
+
+  const defaultDatasetId = getDatasetId(defaultPayload);
+  const storedDatasetId = getDatasetId(storedPayload);
+
+  if (defaultDatasetId && storedDatasetId !== defaultDatasetId) {
+    localStorage.removeItem(STORAGE_KEY);
+    return defaultPayload;
+  }
+
+  return storedPayload;
+}
+
 function filterEastJakartaGeojson(geojson) {
   return {
     ...geojson,
@@ -140,7 +219,7 @@ function filterEastJakartaGeojson(geojson) {
 
 function getFeatureStyle(feature, isSelected) {
   const district = getPredictionByKey(normalizeDistrictName(getGeoDistrictName(feature)));
-  const fillColor = district ? getRiskColor(district.riskCategory) : '#94a3b8';
+  const fillColor = district ? getRiskColor(district) : '#94a3b8';
 
   return {
     fillColor: fillColor,
@@ -164,11 +243,16 @@ function refreshDistrictStyles() {
 }
 
 function renderPopupContent(prediction) {
+  const modelInfo = prediction.probabilityWaspadaPercent !== undefined
+    ? `<br>Probabilitas waspada: ${formatPercent(prediction.probabilityWaspadaPercent)}<br>Level WebGIS: ${prediction.webgisLevelLabel}`
+    : '';
+
   return `
     <strong>${prediction.label}</strong><br>
     Risiko: ${prediction.riskCategory}<br>
     Curah hujan: ${prediction.predictedRainfallMm} mm<br>
     Drainase: ${prediction.drainageCondition}
+    ${modelInfo}
   `;
 }
 
@@ -180,9 +264,32 @@ function renderEmptyDetail() {
   `;
 }
 
+function renderDetailMetric(label, value) {
+  return `
+    <div class="detail-metric">
+      <span>${label}</span>
+      <strong>${value}</strong>
+    </div>
+  `;
+}
+
 function renderDetailContent(district) {
   const prediction = district.prediction;
-  const riskTone = getRiskTone(prediction.riskCategory);
+  const riskTone = getRiskTone(prediction);
+  const probabilityMetric = prediction.probabilityWaspadaPercent !== undefined
+    ? renderDetailMetric('Probabilitas Waspada', formatPercent(prediction.probabilityWaspadaPercent))
+    : '';
+  const webgisLevelMetric = prediction.webgisLevelLabel
+    ? renderDetailMetric('Level WebGIS Model', prediction.webgisLevelLabel)
+    : '';
+  const forecastMetric = prediction.forecastLabel
+    ? renderDetailMetric('Skenario Notebook', prediction.forecastLabel)
+    : '';
+  const actualStatusMetric = prediction.actualStatusFromNotebookTest
+    ? renderDetailMetric('Status Asli Data Test', prediction.actualStatusFromNotebookTest)
+    : '';
+  const footnote = prediction.rainfallDisplayNote ||
+    'Output ini merupakan simulasi data hasil prediksi yang telah disiapkan backend untuk divisualisasikan oleh frontend sesuai arsitektur proposal.';
 
   elements.detailContent.innerHTML = `
     <div class="detail-header">
@@ -190,39 +297,34 @@ function renderDetailContent(district) {
         <h3 class="detail-title">${prediction.label}</h3>
         <p class="detail-copy">${prediction.summary}</p>
       </div>
-      <span class="risk-badge ${riskTone}">${prediction.riskCategory}</span>
+      <span class="risk-badge ${riskTone}">${prediction.webgisLevelLabel || prediction.riskCategory}</span>
     </div>
 
     <div class="detail-meta">
-      <div class="detail-metric">
-        <span>Prediksi Curah Hujan</span>
-        <strong>${prediction.predictedRainfallMm} mm</strong>
-      </div>
-      <div class="detail-metric">
-        <span>Kondisi Drainase</span>
-        <strong>${prediction.drainageCondition}</strong>
-      </div>
-      <div class="detail-metric">
-        <span>Skor Risiko</span>
-        <strong>${Math.round(prediction.riskScore * 100)} / 100</strong>
-      </div>
-      <div class="detail-metric">
-        <span>Rekomendasi</span>
-        <strong>${prediction.recommendation}</strong>
-      </div>
+      ${renderDetailMetric('Prediksi Curah Hujan', `${prediction.predictedRainfallMm} mm`)}
+      ${renderDetailMetric('Kondisi Drainase', prediction.drainageCondition)}
+      ${renderDetailMetric('Skor Risiko', `${Math.round(prediction.riskScore * 100)} / 100`)}
+      ${probabilityMetric}
+      ${webgisLevelMetric}
+      ${forecastMetric}
+      ${actualStatusMetric}
+      ${renderDetailMetric('Rekomendasi', prediction.recommendation)}
     </div>
 
     <p class="detail-footnote">
-      Output ini merupakan simulasi data hasil prediksi yang telah disiapkan backend
-      untuk divisualisasikan oleh frontend sesuai arsitektur proposal.
+      ${footnote}
     </p>
   `;
 }
 
 function updateMapSubtitle(selectedDistrict) {
   if (selectedDistrict) {
+    const forecastLabel = selectedDistrict.prediction.forecastLabel
+      ? ` (${selectedDistrict.prediction.forecastLabel})`
+      : '';
+
     elements.mapSubtitle.textContent =
-      `${selectedDistrict.prediction.label} sedang ditampilkan sebagai wilayah fokus dengan indikator risiko pendukung.`;
+      `${selectedDistrict.prediction.label}${forecastLabel} sedang ditampilkan sebagai wilayah fokus dengan indikator risiko pendukung.`;
     return;
   }
 
@@ -279,7 +381,7 @@ function populateDistrictSelect() {
 function updateSummaryStats() {
   const totalDistricts = state.districts.length;
   const highRiskCount = state.districts.filter(
-    district => district.prediction.riskCategory === 'Tinggi'
+    district => Number(district.prediction.webgisLevel) >= 3 || district.prediction.riskCategory === 'Tinggi'
   ).length;
   const averageRainfall = totalDistricts === 0
     ? 0
@@ -323,7 +425,7 @@ function createHeatOverlay() {
         radius: 7,
         weight: 1.5,
         color: '#ffffff',
-        fillColor: getRiskColor(district.prediction.riskCategory),
+        fillColor: getRiskColor(district.prediction),
         fillOpacity: 0.98
       });
 
@@ -461,7 +563,7 @@ function bootstrapApp() {
     fetchJson('data/east-jakarta-predictions.json')
   ])
     .then(([geojson, predictionPayload]) => {
-      const activePredictionPayload = getStoredPredictionPayload() || predictionPayload;
+      const activePredictionPayload = resolveActivePredictionPayload(predictionPayload);
 
       buildPredictionLookup(activePredictionPayload);
 

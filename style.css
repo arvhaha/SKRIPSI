@@ -393,6 +393,12 @@ button {
   background: rgba(240, 164, 0, 0.16);
 }
 
+.legend-chip.watch,
+.risk-badge.watch {
+  color: #c85000;
+  background: rgba(247, 103, 7, 0.14);
+}
+
 .legend-chip.high,
 .risk-badge.high {
   color: var(--high);
