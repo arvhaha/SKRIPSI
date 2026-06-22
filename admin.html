@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Input Data Risiko Banjir</title>
+  <title>Admin Preview Hasil Model Banjir</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,7 +17,7 @@
         <span class="brand-icon">FG</span>
         <span>
           <strong>FloodGIS</strong>
-          <small>Admin Data</small>
+          <small>Preview Model</small>
         </span>
       </a>
 
@@ -29,10 +29,11 @@
     <header class="admin-hero">
       <div>
         <p class="eyebrow">Panel Admin</p>
-        <h1>Input Data Prediksi Risiko Banjir</h1>
+        <h1>Preview Hasil Model Risiko Banjir</h1>
         <p class="hero-text">
-          Gunakan halaman ini untuk mengubah data prediksi per kecamatan. Pada versi statis,
-          data disimpan di browser melalui localStorage dan langsung dipakai oleh halaman peta.
+          Halaman ini menampilkan hasil prediksi terbaru yang dihitung backend model.
+          Admin tidak lagi mengubah nilai prediksi dari browser, sehingga peta selalu
+          mengikuti keluaran model yang aktif.
         </p>
       </div>
       <div class="admin-status-card">
@@ -42,98 +43,169 @@
       </div>
     </header>
 
+    <section class="admin-kpi-grid" aria-label="Ringkasan cepat admin">
+      <article class="kpi-card">
+        <span>Total Kecamatan</span>
+        <strong id="summaryDistrictCount">-</strong>
+        <small>Jumlah wilayah yang sedang dipantau di WebGIS.</small>
+      </article>
+
+      <article class="kpi-card">
+        <span>Risiko Tertinggi</span>
+        <strong id="summaryTopRiskDistrict">-</strong>
+        <small id="summaryTopRiskMeta">Menunggu data backend.</small>
+      </article>
+
+      <article class="kpi-card">
+        <span>Kecamatan Siaga</span>
+        <strong id="summaryAlertCount">-</strong>
+        <small>Wilayah dengan level WebGIS kuning sampai merah.</small>
+      </article>
+
+      <article class="kpi-card">
+        <span>Rata-Rata Probabilitas</span>
+        <strong id="summaryAverageProbability">-</strong>
+        <small>Gambaran umum potensi waspada semua kecamatan.</small>
+      </article>
+    </section>
+
     <section class="admin-grid">
-      <form id="predictionForm" class="panel admin-form">
+      <section class="panel admin-form">
         <div class="panel-heading">
-          <h2>Form Input Kecamatan</h2>
-          <p>Pilih kecamatan, isi indikator, lalu simpan perubahan.</p>
+          <h2>Preview Kecamatan</h2>
+          <p>Pilih kecamatan untuk melihat hasil prediksi model secara rinci.</p>
         </div>
 
         <div class="form-grid">
           <label class="field" for="adminDistrict">
             <span>Kecamatan</span>
-            <select id="adminDistrict" required></select>
+            <select id="adminDistrict"></select>
           </label>
 
           <label class="field" for="predictedRainfallMm">
             <span>Curah Hujan Prediksi (mm)</span>
-            <input id="predictedRainfallMm" type="number" min="0" max="500" step="1" required>
+            <input id="predictedRainfallMm" type="text" readonly>
           </label>
 
-          <label class="field" for="drainageCondition">
-            <span>Kondisi Drainase</span>
-            <select id="drainageCondition" required>
-              <option value="Baik">Baik</option>
-              <option value="Sedang">Sedang</option>
-              <option value="Buruk">Buruk</option>
-            </select>
+          <label class="field" for="probabilityWaspadaPercent">
+            <span>Probabilitas Waspada</span>
+            <input id="probabilityWaspadaPercent" type="text" readonly>
           </label>
 
           <label class="field" for="riskCategory">
             <span>Kategori Risiko</span>
-            <select id="riskCategory" required>
-              <option value="Rendah">Rendah</option>
-              <option value="Sedang">Sedang</option>
-              <option value="Tinggi">Tinggi</option>
-            </select>
+            <input id="riskCategory" type="text" readonly>
           </label>
 
           <label class="field" for="riskScore">
             <span>Skor Risiko (0-100)</span>
-            <input id="riskScore" type="number" min="0" max="100" step="1" required>
+            <input id="riskScore" type="text" readonly>
+          </label>
+
+          <label class="field" for="webgisLevelLabel">
+            <span>Level WebGIS</span>
+            <input id="webgisLevelLabel" type="text" readonly>
+          </label>
+
+          <label class="field" for="drainageCondition">
+            <span>Kondisi Drainase</span>
+            <input id="drainageCondition" type="text" readonly>
+          </label>
+
+          <label class="field" for="forecastLabel">
+            <span>Label Prediksi</span>
+            <input id="forecastLabel" type="text" readonly>
+          </label>
+
+          <label class="field" for="latestObservationDate">
+            <span>Tanggal Data Terakhir</span>
+            <input id="latestObservationDate" type="text" readonly>
+          </label>
+
+          <label class="field" for="latestObservedRainfallMm">
+            <span>Hujan Aktual Terakhir</span>
+            <input id="latestObservedRainfallMm" type="text" readonly>
+          </label>
+
+          <label class="field" for="recentThreeDayAverageMm">
+            <span>Rata-Rata Hujan 3 Hari</span>
+            <input id="recentThreeDayAverageMm" type="text" readonly>
           </label>
 
           <label class="field form-wide" for="summary">
             <span>Ringkasan Kondisi</span>
-            <textarea id="summary" rows="4" required></textarea>
+            <textarea id="summary" rows="4" readonly></textarea>
           </label>
 
           <label class="field form-wide" for="recommendation">
             <span>Rekomendasi</span>
-            <textarea id="recommendation" rows="3" required></textarea>
+            <textarea id="recommendation" rows="3" readonly></textarea>
           </label>
         </div>
 
         <div class="admin-actions">
-          <button type="submit">Simpan Data</button>
-          <button id="autoClassifyButton" class="button-secondary" type="button">Hitung Kategori</button>
-          <button id="resetFormButton" class="button-ghost" type="button">Reset Form</button>
+          <a class="button-secondary nav-signin nav-link-wide" href="index.html">Buka Peta Kecamatan Ini</a>
         </div>
-      </form>
+      </section>
 
-      <aside class="panel admin-help">
-        <div class="panel-heading">
-          <h2>Panduan Input</h2>
-          <p>Data yang disimpan akan menjadi sumber utama di halaman peta pada browser ini.</p>
-        </div>
+      <div class="admin-sidebar">
+        <aside class="panel admin-help">
+          <div class="panel-heading">
+            <h2>Info Backend</h2>
+            <p>Admin cukup cek sumber data, model aktif, dan waktu update dari panel ini.</p>
+          </div>
 
-        <div class="help-list">
-          <div>
-            <strong>Rendah</strong>
-            <p>Skor 0-39, biasanya curah hujan dan drainase masih terkendali.</p>
+          <div class="backend-meta">
+            <div class="meta-item">
+              <span>Status Sumber</span>
+              <strong id="backendSourceLabel">Menunggu data</strong>
+            </div>
+            <div class="meta-item">
+              <span>Model Aktif</span>
+              <p id="backendModel">-</p>
+            </div>
+            <div class="meta-item">
+              <span>Sumber Curah Hujan</span>
+              <p id="backendRainfallSource">-</p>
+            </div>
+            <div class="meta-item">
+              <span>Sumber Drainase</span>
+              <p id="backendDrainageSource">-</p>
+            </div>
+            <div class="meta-item">
+              <span>Horizon Prediksi</span>
+              <p id="backendForecastHorizon">-</p>
+            </div>
+            <div class="meta-item">
+              <span>Catatan Akurasi</span>
+              <p id="backendAccuracyNote">-</p>
+            </div>
           </div>
-          <div>
-            <strong>Sedang</strong>
-            <p>Skor 40-69, perlu pemantauan berkala pada titik rawan.</p>
-          </div>
-          <div>
-            <strong>Tinggi</strong>
-            <p>Skor 70-100, perlu prioritas mitigasi dan kesiapsiagaan.</p>
-          </div>
-        </div>
 
-        <div class="admin-actions stacked">
-          <button id="exportJsonButton" type="button">Export JSON</button>
-          <button id="resetStorageButton" class="button-ghost danger" type="button">Hapus Data Admin</button>
-        </div>
-      </aside>
+          <div class="admin-actions stacked">
+            <button id="refreshDataButton" type="button">Refresh Data Model</button>
+            <button id="exportJsonButton" type="button">Export JSON</button>
+          </div>
+        </aside>
+
+        <aside class="panel admin-priority-panel">
+          <div class="panel-heading">
+            <h2>Kecamatan Prioritas</h2>
+            <p>Tiga kecamatan dengan skor risiko tertinggi untuk dipantau lebih dulu.</p>
+          </div>
+
+          <div id="priorityDistrictList" class="priority-list">
+            <div class="empty-state">Menunggu data prioritas dari backend.</div>
+          </div>
+        </aside>
+      </div>
     </section>
 
     <section class="panel admin-table-panel">
       <div class="panel-heading table-heading">
         <div>
           <h2>Data Prediksi Saat Ini</h2>
-          <p>Preview semua kecamatan yang akan ditampilkan di WebGIS.</p>
+          <p>Preview seluruh kecamatan yang saat ini dikirim backend ke WebGIS.</p>
         </div>
         <div id="saveMessage" class="save-message" aria-live="polite"></div>
       </div>
@@ -147,6 +219,7 @@
               <th>Drainase</th>
               <th>Risiko</th>
               <th>Skor</th>
+              <th>Probabilitas</th>
               <th>Aksi</th>
             </tr>
           </thead>

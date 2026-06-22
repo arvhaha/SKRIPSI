@@ -1,8 +1,0 @@
-{
-  "forecast_date": "2026-05-01",
-  "predicted_rr_mm_raw": 4.681,
-  "predicted_rr_mm": 4.681,
-  "predicted_category": "Hujan Ringan",
-  "rain_threshold_mm": 0.5,
-  "postprocess_threshold_mm": 0.0
-}

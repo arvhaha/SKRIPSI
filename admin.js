@@ -1,31 +1,55 @@
-const STORAGE_KEY = 'floodgis_predictions';
+const PREDICTION_ENDPOINTS = [
+  'api/predictions',
+  'data/east-jakarta-predictions.json'
+];
 
 const elements = {
   adminDataStatus: document.getElementById('adminDataStatus'),
   adminUpdatedAt: document.getElementById('adminUpdatedAt'),
-  form: document.getElementById('predictionForm'),
   district: document.getElementById('adminDistrict'),
   rainfall: document.getElementById('predictedRainfallMm'),
+  probability: document.getElementById('probabilityWaspadaPercent'),
   drainage: document.getElementById('drainageCondition'),
   riskCategory: document.getElementById('riskCategory'),
   riskScore: document.getElementById('riskScore'),
+  webgisLevelLabel: document.getElementById('webgisLevelLabel'),
+  forecastLabel: document.getElementById('forecastLabel'),
+  latestObservationDate: document.getElementById('latestObservationDate'),
+  latestObservedRainfallMm: document.getElementById('latestObservedRainfallMm'),
+  recentThreeDayAverageMm: document.getElementById('recentThreeDayAverageMm'),
   summary: document.getElementById('summary'),
   recommendation: document.getElementById('recommendation'),
   tableBody: document.getElementById('predictionTableBody'),
   saveMessage: document.getElementById('saveMessage'),
-  autoClassifyButton: document.getElementById('autoClassifyButton'),
-  resetFormButton: document.getElementById('resetFormButton'),
   exportJsonButton: document.getElementById('exportJsonButton'),
-  resetStorageButton: document.getElementById('resetStorageButton')
+  refreshDataButton: document.getElementById('refreshDataButton'),
+  summaryDistrictCount: document.getElementById('summaryDistrictCount'),
+  summaryTopRiskDistrict: document.getElementById('summaryTopRiskDistrict'),
+  summaryTopRiskMeta: document.getElementById('summaryTopRiskMeta'),
+  summaryAlertCount: document.getElementById('summaryAlertCount'),
+  summaryAverageProbability: document.getElementById('summaryAverageProbability'),
+  backendSourceLabel: document.getElementById('backendSourceLabel'),
+  backendModel: document.getElementById('backendModel'),
+  backendRainfallSource: document.getElementById('backendRainfallSource'),
+  backendDrainageSource: document.getElementById('backendDrainageSource'),
+  backendForecastHorizon: document.getElementById('backendForecastHorizon'),
+  backendAccuracyNote: document.getElementById('backendAccuracyNote'),
+  priorityDistrictList: document.getElementById('priorityDistrictList')
 };
 
 const state = {
   payload: null,
-  selectedDistrictName: null
+  selectedDistrictName: null,
+  sourceUrl: null
 };
 
-function cloneData(data) {
-  return JSON.parse(JSON.stringify(data));
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
 }
 
 function formatUpdatedAt(value) {
@@ -41,74 +65,66 @@ function formatUpdatedAt(value) {
   }).format(date);
 }
 
-function setMessage(message, tone) {
-  elements.saveMessage.textContent = message;
-  elements.saveMessage.className = `save-message ${tone || ''}`.trim();
-}
+function formatPercent(value) {
+  const numericValue = Number(value);
 
-function getStoredPayload() {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-
-    if (!stored) {
-      return null;
-    }
-
-    const parsed = JSON.parse(stored);
-
-    if (!parsed || !Array.isArray(parsed.districts)) {
-      return null;
-    }
-
-    return parsed;
-  } catch (error) {
-    console.warn('Data admin tidak valid:', error);
-    return null;
-  }
-}
-
-function getDatasetId(payload) {
-  return payload && payload.meta ? payload.meta.datasetId || '' : '';
-}
-
-function resolveActivePayload(defaultPayload) {
-  const storedPayload = getStoredPayload();
-
-  if (!storedPayload) {
-    return defaultPayload;
+  if (Number.isNaN(numericValue)) {
+    return 'Tidak tersedia';
   }
 
-  const defaultDatasetId = getDatasetId(defaultPayload);
-  const storedDatasetId = getDatasetId(storedPayload);
-
-  if (defaultDatasetId && storedDatasetId !== defaultDatasetId) {
-    localStorage.removeItem(STORAGE_KEY);
-    return defaultPayload;
-  }
-
-  return storedPayload;
+  return `${numericValue.toLocaleString('id-ID', {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1
+  })}%`;
 }
 
-function persistPayload() {
-  state.payload.meta.updatedAt = new Date().toISOString();
-  state.payload.meta.source = 'admin-local-storage';
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state.payload));
-  updateHeaderStatus();
-}
+function formatMillimeter(value) {
+  const numericValue = Number(value);
 
-function getRiskCategoryFromScore(score) {
-  if (score >= 70) {
-    return 'Tinggi';
+  if (Number.isNaN(numericValue)) {
+    return '-';
   }
 
-  if (score >= 40) {
-    return 'Sedang';
-  }
-
-  return 'Rendah';
+  return `${numericValue.toLocaleString('id-ID', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 1
+  })} mm`;
 }
 
-function getRiskTone(category) {
+function formatScore(value) {
+  const numericValue = Number(value);
+
+  if (Number.isNaN(numericValue)) {
+    return 'Tidak tersedia';
+  }
+
+  const normalized = numericValue <= 1 ? numericValue * 100 : numericValue;
+  return `${normalized.toLocaleString('id-ID', {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1
+  })} / 100`;
+}
+
+function getProbabilityPercentValue(district) {
+  const probabilityPercent = Number(district?.probabilityWaspadaPercent);
+
+  if (!Number.isNaN(probabilityPercent)) {
+    return probabilityPercent;
+  }
+
+  const riskScore = Number(district?.riskScore);
+  if (!Number.isNaN(riskScore)) {
+    return riskScore <= 1 ? riskScore * 100 : riskScore;
+  }
+
+  return NaN;
+}
+
+function getRiskTone(category, level) {
+  if (Number(level) >= 4) {
+    return 'high';
+  }
+
   switch ((category || '').toLowerCase()) {
     case 'rendah':
       return 'low';
@@ -121,78 +137,206 @@ function getRiskTone(category) {
   }
 }
 
+function setMessage(message, tone) {
+  elements.saveMessage.textContent = message;
+  elements.saveMessage.className = `save-message ${tone || ''}`.trim();
+}
+
+function isLiveBackendSource() {
+  return Boolean(state.sourceUrl && state.sourceUrl.startsWith('api/'));
+}
+
+function sortDistrictsByRisk(districts) {
+  return districts
+    .slice()
+    .sort((left, right) => {
+      const riskDifference = Number(right.riskScore || 0) - Number(left.riskScore || 0);
+      if (riskDifference !== 0) {
+        return riskDifference;
+      }
+
+      return String(left.label || '').localeCompare(String(right.label || ''), 'id');
+    });
+}
+
 function getSelectedDistrict() {
-  return state.payload.districts.find(district => district.name === state.selectedDistrictName);
+  if (!state.payload) {
+    return null;
+  }
+
+  return state.payload.districts.find(district => district.name === state.selectedDistrictName) || null;
 }
 
 function updateHeaderStatus() {
-  const isAdminData = state.payload.meta.source === 'admin-local-storage';
-  elements.adminDataStatus.textContent = isAdminData ? 'Data Admin Aktif' : 'Data Bawaan';
-  elements.adminUpdatedAt.textContent = `Terakhir diperbarui: ${formatUpdatedAt(state.payload.meta.updatedAt)}`;
+  if (!state.payload) {
+    return;
+  }
+
+  elements.adminDataStatus.textContent = isLiveBackendSource()
+    ? 'Backend Live'
+    : 'Fallback JSON';
+  elements.adminUpdatedAt.textContent =
+    `Terakhir diperbarui: ${formatUpdatedAt(state.payload.meta?.updatedAt)}`;
+}
+
+function populateBackendInfo() {
+  const meta = state.payload?.meta || {};
+
+  elements.backendSourceLabel.textContent = isLiveBackendSource()
+    ? 'API backend aktif'
+    : 'File JSON statis';
+  elements.backendModel.textContent = meta.model || '-';
+  elements.backendRainfallSource.textContent = meta.rainfallSource || '-';
+  elements.backendDrainageSource.textContent = meta.drainageSource || '-';
+
+  if (meta.forecastHorizonDays) {
+    elements.backendForecastHorizon.textContent = `${meta.forecastHorizonDays} hari`;
+  } else {
+    elements.backendForecastHorizon.textContent = '-';
+  }
+
+  elements.backendAccuracyNote.textContent = meta.modelAccuracyNote || meta.conversionNote || '-';
 }
 
 function populateDistrictOptions() {
-  elements.district.innerHTML = state.payload.districts
-    .map(district => `<option value="${district.name}">${district.label}</option>`)
+  const options = state.payload.districts
+    .slice()
+    .sort((left, right) => left.label.localeCompare(right.label, 'id'))
+    .map(district => `<option value="${escapeHtml(district.name)}">${escapeHtml(district.label)}</option>`)
     .join('');
 
-  state.selectedDistrictName = state.payload.districts[0]?.name || null;
-  elements.district.value = state.selectedDistrictName;
+  elements.district.innerHTML = options;
+
+  const selectedExists = state.payload.districts.some(
+    district => district.name === state.selectedDistrictName
+  );
+
+  state.selectedDistrictName = selectedExists
+    ? state.selectedDistrictName
+    : state.payload.districts[0]?.name || null;
+
+  elements.district.value = state.selectedDistrictName || '';
 }
 
-function fillForm(district) {
+function clearPreview() {
+  elements.rainfall.value = '';
+  elements.probability.value = '';
+  elements.drainage.value = '';
+  elements.riskCategory.value = '';
+  elements.riskScore.value = '';
+  elements.webgisLevelLabel.value = '';
+  elements.forecastLabel.value = '';
+  elements.latestObservationDate.value = '';
+  elements.latestObservedRainfallMm.value = '';
+  elements.recentThreeDayAverageMm.value = '';
+  elements.summary.value = '';
+  elements.recommendation.value = '';
+}
+
+function fillPreview(district) {
   if (!district) {
+    clearPreview();
     return;
   }
 
-  elements.rainfall.value = district.predictedRainfallMm;
-  elements.drainage.value = district.drainageCondition;
-  elements.riskCategory.value = district.riskCategory;
-  elements.riskScore.value = Math.round(district.riskScore * 100);
-  elements.summary.value = district.summary;
-  elements.recommendation.value = district.recommendation;
+  elements.rainfall.value = formatMillimeter(district.predictedRainfallMm);
+  elements.probability.value = formatPercent(getProbabilityPercentValue(district));
+  elements.drainage.value = district.drainageCondition || '-';
+  elements.riskCategory.value = district.riskCategory || '-';
+  elements.riskScore.value = formatScore(district.riskScore);
+  elements.webgisLevelLabel.value = district.webgisLevelLabel || district.riskCategory || '-';
+  elements.forecastLabel.value = district.forecastLabel || '-';
+  elements.latestObservationDate.value = district.latestObservationDate || '-';
+  elements.latestObservedRainfallMm.value = formatMillimeter(district.latestObservedRainfallMm);
+  elements.recentThreeDayAverageMm.value = formatMillimeter(district.recentThreeDayAverageMm);
+  elements.summary.value = district.summary || '-';
+  elements.recommendation.value = district.recommendation || '-';
+}
+
+function renderSummaryCards() {
+  const districts = state.payload?.districts || [];
+  const topDistrict = sortDistrictsByRisk(districts)[0] || null;
+  const alertCount = districts.filter(district => Number(district.webgisLevel || 0) >= 2).length;
+  const averageProbability = districts.length
+    ? districts.reduce((total, district) => total + (getProbabilityPercentValue(district) || 0), 0) / districts.length
+    : NaN;
+
+  elements.summaryDistrictCount.textContent = String(districts.length || 0);
+  elements.summaryTopRiskDistrict.textContent = topDistrict ? topDistrict.label : '-';
+  elements.summaryTopRiskMeta.textContent = topDistrict
+    ? `${formatPercent(getProbabilityPercentValue(topDistrict))} • ${topDistrict.webgisLevelLabel || topDistrict.riskCategory}`
+    : 'Belum ada data risiko.';
+  elements.summaryAlertCount.textContent = String(alertCount);
+  elements.summaryAverageProbability.textContent = formatPercent(averageProbability);
+}
+
+function renderPriorityList() {
+  const priorityDistricts = sortDistrictsByRisk(state.payload?.districts || []).slice(0, 3);
+
+  if (priorityDistricts.length === 0) {
+    elements.priorityDistrictList.innerHTML = '<div class="empty-state">Belum ada data prioritas.</div>';
+    return;
+  }
+
+  elements.priorityDistrictList.innerHTML = priorityDistricts
+    .map(district => {
+      const tone = getRiskTone(district.riskCategory, district.webgisLevel);
+      return `
+        <article class="priority-card">
+          <div class="priority-card-head">
+            <div>
+              <strong>${escapeHtml(district.label)}</strong>
+              <p>${escapeHtml(district.forecastLabel || 'Prediksi aktif')}</p>
+            </div>
+            <span class="risk-badge ${tone}">${escapeHtml(district.webgisLevelLabel || district.riskCategory || '-')}</span>
+          </div>
+          <div class="priority-card-body">
+            <span>${escapeHtml(formatPercent(getProbabilityPercentValue(district)))} waspada</span>
+            <span>${escapeHtml(formatMillimeter(district.predictedRainfallMm))} prediksi</span>
+          </div>
+          <button class="table-action priority-action" type="button" data-district="${escapeHtml(district.name)}">
+            Lihat Detail
+          </button>
+        </article>
+      `;
+    })
+    .join('');
 }
 
 function renderTable() {
-  elements.tableBody.innerHTML = state.payload.districts
-    .map(district => `
-      <tr>
-        <td><strong>${district.label}</strong></td>
-        <td>${district.predictedRainfallMm} mm</td>
-        <td>${district.drainageCondition}</td>
-        <td><span class="risk-badge ${getRiskTone(district.riskCategory)}">${district.riskCategory}</span></td>
-        <td>${Math.round(district.riskScore * 100)}</td>
-        <td>
-          <button class="table-action" type="button" data-district="${district.name}">Edit</button>
-        </td>
-      </tr>
-    `)
+  elements.tableBody.innerHTML = sortDistrictsByRisk(state.payload?.districts || [])
+    .map(district => {
+      const tone = getRiskTone(district.riskCategory, district.webgisLevel);
+      return `
+        <tr>
+          <td><strong>${escapeHtml(district.label)}</strong></td>
+          <td>${escapeHtml(formatMillimeter(district.predictedRainfallMm))}</td>
+          <td>${escapeHtml(district.drainageCondition || '-')}</td>
+          <td><span class="risk-badge ${tone}">${escapeHtml(district.riskCategory || '-')}</span></td>
+          <td>${escapeHtml(formatScore(district.riskScore).replace(' / 100', ''))}</td>
+          <td>${escapeHtml(formatPercent(getProbabilityPercentValue(district)))}</td>
+          <td>
+            <button class="table-action" type="button" data-district="${escapeHtml(district.name)}">Lihat</button>
+          </td>
+        </tr>
+      `;
+    })
     .join('');
-}
-
-function updateSelectedDistrictFromForm() {
-  const district = getSelectedDistrict();
-
-  if (!district) {
-    return;
-  }
-
-  district.predictedRainfallMm = Number(elements.rainfall.value);
-  district.drainageCondition = elements.drainage.value;
-  district.riskCategory = elements.riskCategory.value;
-  district.riskScore = Number(elements.riskScore.value) / 100;
-  district.summary = elements.summary.value.trim();
-  district.recommendation = elements.recommendation.value.trim();
 }
 
 function selectDistrict(districtName) {
   state.selectedDistrictName = districtName;
   elements.district.value = districtName;
-  fillForm(getSelectedDistrict());
+  fillPreview(getSelectedDistrict());
   setMessage('', '');
 }
 
 function exportJson() {
+  if (!state.payload) {
+    setMessage('Belum ada data yang bisa diexport.', 'error');
+    return;
+  }
+
   const blob = new Blob([JSON.stringify(state.payload, null, 2)], {
     type: 'application/json'
   });
@@ -203,37 +347,81 @@ function exportJson() {
   link.download = 'east-jakarta-predictions.json';
   link.click();
   URL.revokeObjectURL(url);
+  setMessage('JSON berhasil diexport.', 'success');
+}
+
+function fetchJson(url) {
+  return fetch(url).then(response => {
+    if (!response.ok) {
+      throw new Error(`Gagal memuat ${url} (${response.status})`);
+    }
+
+    return response.json();
+  });
+}
+
+async function fetchFirstAvailableJson(urls) {
+  let lastError = null;
+
+  for (const url of urls) {
+    try {
+      const payload = await fetchJson(url);
+      return { payload, sourceUrl: url };
+    } catch (error) {
+      lastError = error;
+      console.warn(`Sumber data ${url} gagal dimuat.`, error);
+    }
+  }
+
+  throw lastError || new Error('Tidak ada sumber data prediksi yang berhasil dimuat.');
+}
+
+function resetDashboardToErrorState() {
+  state.payload = null;
+  state.sourceUrl = null;
+  elements.adminDataStatus.textContent = 'Gagal Memuat';
+  elements.adminUpdatedAt.textContent = 'Pastikan backend lokal sedang berjalan.';
+  elements.summaryDistrictCount.textContent = '-';
+  elements.summaryTopRiskDistrict.textContent = '-';
+  elements.summaryTopRiskMeta.textContent = 'Data ringkasan belum tersedia.';
+  elements.summaryAlertCount.textContent = '-';
+  elements.summaryAverageProbability.textContent = '-';
+  elements.backendSourceLabel.textContent = '-';
+  elements.backendModel.textContent = '-';
+  elements.backendRainfallSource.textContent = '-';
+  elements.backendDrainageSource.textContent = '-';
+  elements.backendForecastHorizon.textContent = '-';
+  elements.backendAccuracyNote.textContent = '-';
+  elements.priorityDistrictList.innerHTML =
+    '<div class="empty-state">Prioritas tidak bisa dimuat karena data backend gagal dibaca.</div>';
+  elements.tableBody.innerHTML = '';
+  clearPreview();
+}
+
+function loadPayload(message) {
+  fetchFirstAvailableJson(PREDICTION_ENDPOINTS)
+    .then(({ payload, sourceUrl }) => {
+      state.payload = payload;
+      state.sourceUrl = sourceUrl;
+      populateDistrictOptions();
+      fillPreview(getSelectedDistrict());
+      renderSummaryCards();
+      populateBackendInfo();
+      renderPriorityList();
+      renderTable();
+      updateHeaderStatus();
+      setMessage(message || 'Preview model berhasil dimuat.', 'success');
+    })
+    .catch(error => {
+      console.error('Gagal memuat data admin:', error);
+      resetDashboardToErrorState();
+      setMessage('Data backend gagal dimuat.', 'error');
+    });
 }
 
 function bindEvents() {
   elements.district.addEventListener('change', event => {
     selectDistrict(event.target.value);
-  });
-
-  elements.autoClassifyButton.addEventListener('click', () => {
-    const score = Number(elements.riskScore.value);
-
-    if (Number.isNaN(score)) {
-      setMessage('Isi skor risiko terlebih dahulu.', 'error');
-      return;
-    }
-
-    elements.riskCategory.value = getRiskCategoryFromScore(score);
-    setMessage('Kategori risiko berhasil dihitung dari skor.', 'success');
-  });
-
-  elements.resetFormButton.addEventListener('click', () => {
-    fillForm(getSelectedDistrict());
-    setMessage('Form dikembalikan ke data terakhir.', 'success');
-  });
-
-  elements.form.addEventListener('submit', event => {
-    event.preventDefault();
-
-    updateSelectedDistrictFromForm();
-    persistPayload();
-    renderTable();
-    setMessage('Data berhasil disimpan. Buka halaman peta untuk melihat perubahan.', 'success');
   });
 
   elements.tableBody.addEventListener('click', event => {
@@ -247,47 +435,22 @@ function bindEvents() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
 
-  elements.exportJsonButton.addEventListener('click', exportJson);
+  elements.priorityDistrictList.addEventListener('click', event => {
+    const button = event.target.closest('[data-district]');
 
-  elements.resetStorageButton.addEventListener('click', () => {
-    const approved = confirm('Hapus data admin dari browser dan kembali ke data bawaan?');
-
-    if (!approved) {
+    if (!button) {
       return;
     }
 
-    localStorage.removeItem(STORAGE_KEY);
-    window.location.reload();
+    selectDistrict(button.dataset.district);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
+  elements.exportJsonButton.addEventListener('click', exportJson);
+  elements.refreshDataButton.addEventListener('click', () => {
+    loadPayload('Preview model berhasil diperbarui dari backend.');
   });
 }
 
-function fetchJson(url) {
-  return fetch(url).then(response => {
-    if (!response.ok) {
-      throw new Error(`Gagal memuat ${url} (${response.status})`);
-    }
-
-    return response.json();
-  });
-}
-
-function initializeAdmin() {
-  fetchJson('data/east-jakarta-predictions.json')
-    .then(defaultPayload => {
-      state.payload = cloneData(resolveActivePayload(defaultPayload));
-      populateDistrictOptions();
-      fillForm(getSelectedDistrict());
-      renderTable();
-      updateHeaderStatus();
-      bindEvents();
-      setMessage('Data siap diedit.', 'success');
-    })
-    .catch(error => {
-      console.error('Gagal memuat data admin:', error);
-      elements.adminDataStatus.textContent = 'Gagal Memuat';
-      elements.adminUpdatedAt.textContent = 'Pastikan file JSON tersedia dan jalankan melalui local server.';
-      setMessage('Data admin gagal dimuat.', 'error');
-    });
-}
-
-initializeAdmin();
+bindEvents();
+loadPayload('Preview model berhasil dimuat.');

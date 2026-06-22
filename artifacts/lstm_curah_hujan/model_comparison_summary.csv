@@ -1,4 +1,0 @@
-model,mae_mm,rmse_mm,rain_accuracy,rain_precision,rain_recall,rain_f1
-LSTM hydro pretrain + BMKG finetune,8.107,14.688,0.6,0.6,1.0,0.75
-Baseline median 30 hari,7.613,15.496,0.6,0.6,1.0,0.75
-Baseline previous day,9.938,19.901,0.646,0.7,0.718,0.709

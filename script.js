@@ -8,7 +8,10 @@ const baseMap = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}
 
 L.control.scale({ imperial: false }).addTo(map);
 
-const STORAGE_KEY = 'floodgis_predictions';
+const PREDICTION_ENDPOINTS = [
+  'api/predictions',
+  'data/east-jakarta-predictions.json'
+];
 
 const elements = {
   districtSelect: document.getElementById('districtSelect'),
@@ -163,49 +166,6 @@ function buildPredictionLookup(predictionPayload) {
       district
     ])
   );
-}
-
-function getStoredPredictionPayload() {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-
-    if (!stored) {
-      return null;
-    }
-
-    const parsed = JSON.parse(stored);
-
-    if (!parsed || !Array.isArray(parsed.districts)) {
-      return null;
-    }
-
-    return parsed;
-  } catch (error) {
-    console.warn('Data admin tidak valid:', error);
-    return null;
-  }
-}
-
-function getDatasetId(payload) {
-  return payload && payload.meta ? payload.meta.datasetId || '' : '';
-}
-
-function resolveActivePredictionPayload(defaultPayload) {
-  const storedPayload = getStoredPredictionPayload();
-
-  if (!storedPayload) {
-    return defaultPayload;
-  }
-
-  const defaultDatasetId = getDatasetId(defaultPayload);
-  const storedDatasetId = getDatasetId(storedPayload);
-
-  if (defaultDatasetId && storedDatasetId !== defaultDatasetId) {
-    localStorage.removeItem(STORAGE_KEY);
-    return defaultPayload;
-  }
-
-  return storedPayload;
 }
 
 function filterEastJakartaGeojson(geojson) {
@@ -555,17 +515,30 @@ function fetchJson(url) {
   });
 }
 
+async function fetchFirstAvailableJson(urls) {
+  let lastError = null;
+
+  for (const url of urls) {
+    try {
+      return await fetchJson(url);
+    } catch (error) {
+      lastError = error;
+      console.warn(`Sumber data ${url} gagal dimuat.`, error);
+    }
+  }
+
+  throw lastError || new Error('Tidak ada sumber data yang berhasil dimuat.');
+}
+
 function bootstrapApp() {
   setStatus('Memuat data', '');
 
   Promise.all([
     fetchJson('data/jkt.geojson'),
-    fetchJson('data/east-jakarta-predictions.json')
+    fetchFirstAvailableJson(PREDICTION_ENDPOINTS)
   ])
     .then(([geojson, predictionPayload]) => {
-      const activePredictionPayload = resolveActivePredictionPayload(predictionPayload);
-
-      buildPredictionLookup(activePredictionPayload);
+      buildPredictionLookup(predictionPayload);
 
       const filteredGeojson = filterEastJakartaGeojson(geojson);
 
