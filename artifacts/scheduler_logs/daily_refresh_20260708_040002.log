@@ -1,0 +1,38 @@
+[2026-07-08 04:00:02] Mulai job scheduler harian HydroGIS.
+[2026-07-08 04:00:02] Log file: C:\Users\Vino\Documents\SKRIPSI\artifacts\scheduler_logs\daily_refresh_20260708_040002.log
+[2026-07-08 04:00:02] Environment: LOCAL
+[2026-07-08 04:00:02] Langkah 1/2: update dataset cuaca incremental.
+[INFO] Dataset target: C:\Users\Vino\Documents\SKRIPSI\Master_Data_Spasial_Jaktim_1990_sekarang.csv
+[INFO] Periode update incremental: 2026-07-04 s.d. 2026-07-08
+[1/10] Mengunduh update Matraman dari 2026-07-04 s.d. 2026-07-08...
+Traceback (most recent call last):
+  File "C:\Users\Vino\Documents\SKRIPSI\download_openmeteo_historical_jaktim.py", line 157, in fetch_json
+    with urlopen(request, timeout=timeout, context=ssl_context) as response:
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\urllib\request.py", line 214, in urlopen
+    return opener.open(url, data, timeout)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\urllib\request.py", line 523, in open
+    response = meth(req, response)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\urllib\request.py", line 632, in http_response
+    response = self.parent.error(
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\urllib\request.py", line 561, in error
+    return self._call_chain(*args)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\urllib\request.py", line 494, in _call_chain
+    result = func(*args)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\urllib\request.py", line 641, in http_error_default
+    raise HTTPError(req.full_url, code, msg, hdrs, fp)
+urllib.error.HTTPError: HTTP Error 400: Bad Request
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Vino\Documents\SKRIPSI\update_openmeteo_dataset_jaktim.py", line 226, in <module>
+    main()
+  File "C:\Users\Vino\Documents\SKRIPSI\update_openmeteo_dataset_jaktim.py", line 197, in main
+    incremental_dataset = download_incremental_dataset(args, start_date, args.end_date)
+  File "C:\Users\Vino\Documents\SKRIPSI\update_openmeteo_dataset_jaktim.py", line 154, in download_incremental_dataset
+    payload = fetch_json(
+  File "C:\Users\Vino\Documents\SKRIPSI\download_openmeteo_historical_jaktim.py", line 174, in fetch_json
+    raise RuntimeError(
+RuntimeError: HTTP 400 saat memanggil Open-Meteo.
+URL: https://archive-api.open-meteo.com/v1/archive?latitude=-6.201&longitude=106.864&start_date=2026-07-04&end_date=2026-07-08&daily=precipitation_sum%2Ctemperature_2m_mean%2Crelative_humidity_2m_mean%2Cwind_speed_10m_max&timezone=Asia%2FJakarta&temperature_unit=celsius&wind_speed_unit=kmh&precipitation_unit=mm
+Detail: {"error":true,"reason":"Parameter 'end_date' is out of allowed range from 1940-01-01 to 2026-07-07"}

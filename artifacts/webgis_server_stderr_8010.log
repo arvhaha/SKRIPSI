@@ -1,0 +1,434 @@
+127.0.0.1 - - [09/Jul/2026 09:56:28] "GET /api/health HTTP/1.1" 200 -
+127.0.0.1 - - [09/Jul/2026 09:56:48] "GET /admin-backend.html HTTP/1.1" 200 -
+127.0.0.1 - - [09/Jul/2026 09:56:48] "GET /admin.html HTTP/1.1" 200 -
+127.0.0.1 - - [09/Jul/2026 09:56:48] "GET /admin-preview.html HTTP/1.1" 200 -
+127.0.0.1 - - [09/Jul/2026 09:56:48] "GET /admin-predictions.html HTTP/1.1" 200 -
+127.0.0.1 - - [09/Jul/2026 10:17:10] "GET /admin.html HTTP/1.1" 200 -
+127.0.0.1 - - [09/Jul/2026 10:17:10] "GET /style.css HTTP/1.1" 200 -
+127.0.0.1 - - [09/Jul/2026 10:17:10] "GET /admin.js HTTP/1.1" 200 -
+127.0.0.1 - - [09/Jul/2026 10:17:10] "GET /logo%20hydrogis.png HTTP/1.1" 200 -
+127.0.0.1 - - [09/Jul/2026 10:17:11] code 404, message File not found
+127.0.0.1 - - [09/Jul/2026 10:17:11] "GET /favicon.ico HTTP/1.1" 404 -
+127.0.0.1 - - [09/Jul/2026 10:17:13] "GET /admin-preview.html HTTP/1.1" 200 -
+127.0.0.1 - - [09/Jul/2026 10:17:14] "GET /admin-backend.html HTTP/1.1" 200 -
+127.0.0.1 - - [09/Jul/2026 10:17:15] "GET /admin-predictions.html HTTP/1.1" 200 -
+127.0.0.1 - - [09/Jul/2026 10:17:17] "GET /index.html HTTP/1.1" 200 -
+127.0.0.1 - - [09/Jul/2026 10:17:17] "GET /script.js HTTP/1.1" 200 -
+127.0.0.1 - - [09/Jul/2026 10:17:17] "GET /data/jkt.geojson HTTP/1.1" 200 -
+127.0.0.1 - - [09/Jul/2026 10:17:19] "GET /api/predictions HTTP/1.1" 200 -
+----------------------------------------
+Exception occurred during processing of request from ('127.0.0.1', 54363)
+Traceback (most recent call last):
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\socketserver.py", line 683, in process_request_thread
+    self.finish_request(request, client_address)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\socketserver.py", line 360, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+  File "C:\Users\Vino\Documents\SKRIPSI\webgis_backend.py", line 923, in __init__
+    super().__init__(*args, directory=str(ROOT), **kwargs)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\http\server.py", line 668, in __init__
+    super().__init__(*args, **kwargs)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\socketserver.py", line 747, in __init__
+    self.handle()
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\http\server.py", line 433, in handle
+    self.handle_one_request()
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\http\server.py", line 421, in handle_one_request
+    method()
+  File "C:\Users\Vino\Documents\SKRIPSI\webgis_backend.py", line 955, in do_GET
+    self.respond_json(payload)
+  File "C:\Users\Vino\Documents\SKRIPSI\webgis_backend.py", line 1006, in respond_json
+    self.wfile.write(body)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\socketserver.py", line 826, in write
+    self._sock.sendall(b)
+ConnectionAbortedError: [WinError 10053] An established connection was aborted by the software in your host machine
+----------------------------------------
+127.0.0.1 - - [09/Jul/2026 10:17:19] "GET /api/predictions HTTP/1.1" 200 -
+----------------------------------------
+Exception occurred during processing of request from ('127.0.0.1', 54367)
+Traceback (most recent call last):
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\socketserver.py", line 683, in process_request_thread
+    self.finish_request(request, client_address)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\socketserver.py", line 360, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+  File "C:\Users\Vino\Documents\SKRIPSI\webgis_backend.py", line 923, in __init__
+    super().__init__(*args, directory=str(ROOT), **kwargs)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\http\server.py", line 668, in __init__
+    super().__init__(*args, **kwargs)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\socketserver.py", line 747, in __init__
+    self.handle()
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\http\server.py", line 433, in handle
+    self.handle_one_request()
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\http\server.py", line 421, in handle_one_request
+    method()
+  File "C:\Users\Vino\Documents\SKRIPSI\webgis_backend.py", line 955, in do_GET
+    self.respond_json(payload)
+  File "C:\Users\Vino\Documents\SKRIPSI\webgis_backend.py", line 1006, in respond_json
+    self.wfile.write(body)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\socketserver.py", line 826, in write
+    self._sock.sendall(b)
+ConnectionAbortedError: [WinError 10053] An established connection was aborted by the software in your host machine
+----------------------------------------
+127.0.0.1 - - [09/Jul/2026 10:17:23] "GET /api/predictions HTTP/1.1" 200 -
+----------------------------------------
+Exception occurred during processing of request from ('127.0.0.1', 54371)
+Traceback (most recent call last):
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\socketserver.py", line 683, in process_request_thread
+    self.finish_request(request, client_address)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\socketserver.py", line 360, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+  File "C:\Users\Vino\Documents\SKRIPSI\webgis_backend.py", line 923, in __init__
+    super().__init__(*args, directory=str(ROOT), **kwargs)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\http\server.py", line 668, in __init__
+    super().__init__(*args, **kwargs)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\socketserver.py", line 747, in __init__
+    self.handle()
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\http\server.py", line 433, in handle
+    self.handle_one_request()
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\http\server.py", line 421, in handle_one_request
+    method()
+  File "C:\Users\Vino\Documents\SKRIPSI\webgis_backend.py", line 955, in do_GET
+    self.respond_json(payload)
+  File "C:\Users\Vino\Documents\SKRIPSI\webgis_backend.py", line 1006, in respond_json
+    self.wfile.write(body)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\socketserver.py", line 826, in write
+    self._sock.sendall(b)
+ConnectionAbortedError: [WinError 10053] An established connection was aborted by the software in your host machine
+----------------------------------------
+127.0.0.1 - - [09/Jul/2026 10:17:26] "GET /api/predictions HTTP/1.1" 200 -
+----------------------------------------
+Exception occurred during processing of request from ('127.0.0.1', 54374)
+Traceback (most recent call last):
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\socketserver.py", line 683, in process_request_thread
+    self.finish_request(request, client_address)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\socketserver.py", line 360, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+  File "C:\Users\Vino\Documents\SKRIPSI\webgis_backend.py", line 923, in __init__
+    super().__init__(*args, directory=str(ROOT), **kwargs)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\http\server.py", line 668, in __init__
+    super().__init__(*args, **kwargs)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\socketserver.py", line 747, in __init__
+    self.handle()
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\http\server.py", line 433, in handle
+    self.handle_one_request()
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\http\server.py", line 421, in handle_one_request
+    method()
+  File "C:\Users\Vino\Documents\SKRIPSI\webgis_backend.py", line 955, in do_GET
+    self.respond_json(payload)
+  File "C:\Users\Vino\Documents\SKRIPSI\webgis_backend.py", line 1006, in respond_json
+    self.wfile.write(body)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\socketserver.py", line 826, in write
+    self._sock.sendall(b)
+ConnectionAbortedError: [WinError 10053] An established connection was aborted by the software in your host machine
+----------------------------------------
+127.0.0.1 - - [09/Jul/2026 10:17:29] "GET /api/predictions HTTP/1.1" 200 -
+----------------------------------------
+Exception occurred during processing of request from ('127.0.0.1', 54379)
+Traceback (most recent call last):
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\socketserver.py", line 683, in process_request_thread
+    self.finish_request(request, client_address)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\socketserver.py", line 360, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+  File "C:\Users\Vino\Documents\SKRIPSI\webgis_backend.py", line 923, in __init__
+    super().__init__(*args, directory=str(ROOT), **kwargs)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\http\server.py", line 668, in __init__
+    super().__init__(*args, **kwargs)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\socketserver.py", line 747, in __init__
+    self.handle()
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\http\server.py", line 433, in handle
+    self.handle_one_request()
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\http\server.py", line 421, in handle_one_request
+    method()
+  File "C:\Users\Vino\Documents\SKRIPSI\webgis_backend.py", line 955, in do_GET
+    self.respond_json(payload)
+  File "C:\Users\Vino\Documents\SKRIPSI\webgis_backend.py", line 1006, in respond_json
+    self.wfile.write(body)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\socketserver.py", line 826, in write
+    self._sock.sendall(b)
+ConnectionAbortedError: [WinError 10053] An established connection was aborted by the software in your host machine
+----------------------------------------
+127.0.0.1 - - [09/Jul/2026 10:17:29] "GET /api/predictions HTTP/1.1" 200 -
+----------------------------------------
+Exception occurred during processing of request from ('127.0.0.1', 54398)
+Traceback (most recent call last):
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\socketserver.py", line 683, in process_request_thread
+    self.finish_request(request, client_address)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\socketserver.py", line 360, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+  File "C:\Users\Vino\Documents\SKRIPSI\webgis_backend.py", line 923, in __init__
+    super().__init__(*args, directory=str(ROOT), **kwargs)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\http\server.py", line 668, in __init__
+    super().__init__(*args, **kwargs)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\socketserver.py", line 747, in __init__
+    self.handle()
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\http\server.py", line 433, in handle
+    self.handle_one_request()
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\http\server.py", line 421, in handle_one_request
+    method()
+  File "C:\Users\Vino\Documents\SKRIPSI\webgis_backend.py", line 955, in do_GET
+    self.respond_json(payload)
+  File "C:\Users\Vino\Documents\SKRIPSI\webgis_backend.py", line 1006, in respond_json
+    self.wfile.write(body)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\socketserver.py", line 826, in write
+    self._sock.sendall(b)
+ConnectionAbortedError: [WinError 10053] An established connection was aborted by the software in your host machine
+----------------------------------------
+127.0.0.1 - - [09/Jul/2026 10:17:33] "GET /api/predictions HTTP/1.1" 200 -
+----------------------------------------
+Exception occurred during processing of request from ('127.0.0.1', 54400)
+Traceback (most recent call last):
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\socketserver.py", line 683, in process_request_thread
+    self.finish_request(request, client_address)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\socketserver.py", line 360, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+  File "C:\Users\Vino\Documents\SKRIPSI\webgis_backend.py", line 923, in __init__
+    super().__init__(*args, directory=str(ROOT), **kwargs)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\http\server.py", line 668, in __init__
+    super().__init__(*args, **kwargs)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\socketserver.py", line 747, in __init__
+    self.handle()
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\http\server.py", line 433, in handle
+    self.handle_one_request()
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\http\server.py", line 421, in handle_one_request
+    method()
+  File "C:\Users\Vino\Documents\SKRIPSI\webgis_backend.py", line 955, in do_GET
+    self.respond_json(payload)
+  File "C:\Users\Vino\Documents\SKRIPSI\webgis_backend.py", line 1006, in respond_json
+    self.wfile.write(body)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\socketserver.py", line 826, in write
+    self._sock.sendall(b)
+ConnectionAbortedError: [WinError 10053] An established connection was aborted by the software in your host machine
+----------------------------------------
+127.0.0.1 - - [09/Jul/2026 10:17:33] "GET /api/predictions HTTP/1.1" 200 -
+----------------------------------------
+Exception occurred during processing of request from ('127.0.0.1', 54402)
+Traceback (most recent call last):
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\socketserver.py", line 683, in process_request_thread
+    self.finish_request(request, client_address)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\socketserver.py", line 360, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+  File "C:\Users\Vino\Documents\SKRIPSI\webgis_backend.py", line 923, in __init__
+    super().__init__(*args, directory=str(ROOT), **kwargs)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\http\server.py", line 668, in __init__
+    super().__init__(*args, **kwargs)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\socketserver.py", line 747, in __init__
+    self.handle()
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\http\server.py", line 433, in handle
+    self.handle_one_request()
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\http\server.py", line 421, in handle_one_request
+    method()
+  File "C:\Users\Vino\Documents\SKRIPSI\webgis_backend.py", line 955, in do_GET
+    self.respond_json(payload)
+  File "C:\Users\Vino\Documents\SKRIPSI\webgis_backend.py", line 1006, in respond_json
+    self.wfile.write(body)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\socketserver.py", line 826, in write
+    self._sock.sendall(b)
+ConnectionAbortedError: [WinError 10053] An established connection was aborted by the software in your host machine
+----------------------------------------
+127.0.0.1 - - [09/Jul/2026 10:17:34] "GET /api/predictions HTTP/1.1" 200 -
+----------------------------------------
+Exception occurred during processing of request from ('127.0.0.1', 54404)
+Traceback (most recent call last):
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\socketserver.py", line 683, in process_request_thread
+    self.finish_request(request, client_address)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\socketserver.py", line 360, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+  File "C:\Users\Vino\Documents\SKRIPSI\webgis_backend.py", line 923, in __init__
+    super().__init__(*args, directory=str(ROOT), **kwargs)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\http\server.py", line 668, in __init__
+    super().__init__(*args, **kwargs)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\socketserver.py", line 747, in __init__
+    self.handle()
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\http\server.py", line 433, in handle
+    self.handle_one_request()
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\http\server.py", line 421, in handle_one_request
+    method()
+  File "C:\Users\Vino\Documents\SKRIPSI\webgis_backend.py", line 955, in do_GET
+    self.respond_json(payload)
+  File "C:\Users\Vino\Documents\SKRIPSI\webgis_backend.py", line 1006, in respond_json
+    self.wfile.write(body)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\socketserver.py", line 826, in write
+    self._sock.sendall(b)
+ConnectionAbortedError: [WinError 10053] An established connection was aborted by the software in your host machine
+----------------------------------------
+127.0.0.1 - - [09/Jul/2026 10:17:34] "GET /api/predictions HTTP/1.1" 200 -
+----------------------------------------
+Exception occurred during processing of request from ('127.0.0.1', 54406)
+Traceback (most recent call last):
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\socketserver.py", line 683, in process_request_thread
+    self.finish_request(request, client_address)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\socketserver.py", line 360, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+  File "C:\Users\Vino\Documents\SKRIPSI\webgis_backend.py", line 923, in __init__
+    super().__init__(*args, directory=str(ROOT), **kwargs)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\http\server.py", line 668, in __init__
+    super().__init__(*args, **kwargs)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\socketserver.py", line 747, in __init__
+    self.handle()
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\http\server.py", line 433, in handle
+    self.handle_one_request()
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\http\server.py", line 421, in handle_one_request
+    method()
+  File "C:\Users\Vino\Documents\SKRIPSI\webgis_backend.py", line 955, in do_GET
+    self.respond_json(payload)
+  File "C:\Users\Vino\Documents\SKRIPSI\webgis_backend.py", line 1006, in respond_json
+    self.wfile.write(body)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\socketserver.py", line 826, in write
+    self._sock.sendall(b)
+ConnectionAbortedError: [WinError 10053] An established connection was aborted by the software in your host machine
+----------------------------------------
+127.0.0.1 - - [09/Jul/2026 10:17:35] "GET /api/predictions HTTP/1.1" 200 -
+----------------------------------------
+Exception occurred during processing of request from ('127.0.0.1', 54408)
+Traceback (most recent call last):
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\socketserver.py", line 683, in process_request_thread
+    self.finish_request(request, client_address)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\socketserver.py", line 360, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+  File "C:\Users\Vino\Documents\SKRIPSI\webgis_backend.py", line 923, in __init__
+    super().__init__(*args, directory=str(ROOT), **kwargs)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\http\server.py", line 668, in __init__
+    super().__init__(*args, **kwargs)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\socketserver.py", line 747, in __init__
+    self.handle()
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\http\server.py", line 433, in handle
+    self.handle_one_request()
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\http\server.py", line 421, in handle_one_request
+    method()
+  File "C:\Users\Vino\Documents\SKRIPSI\webgis_backend.py", line 955, in do_GET
+    self.respond_json(payload)
+  File "C:\Users\Vino\Documents\SKRIPSI\webgis_backend.py", line 1006, in respond_json
+    self.wfile.write(body)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\socketserver.py", line 826, in write
+    self._sock.sendall(b)
+ConnectionAbortedError: [WinError 10053] An established connection was aborted by the software in your host machine
+----------------------------------------
+127.0.0.1 - - [09/Jul/2026 10:17:38] "GET /api/predictions HTTP/1.1" 200 -
+----------------------------------------
+Exception occurred during processing of request from ('127.0.0.1', 54410)
+Traceback (most recent call last):
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\socketserver.py", line 683, in process_request_thread
+    self.finish_request(request, client_address)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\socketserver.py", line 360, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+  File "C:\Users\Vino\Documents\SKRIPSI\webgis_backend.py", line 923, in __init__
+    super().__init__(*args, directory=str(ROOT), **kwargs)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\http\server.py", line 668, in __init__
+    super().__init__(*args, **kwargs)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\socketserver.py", line 747, in __init__
+    self.handle()
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\http\server.py", line 433, in handle
+    self.handle_one_request()
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\http\server.py", line 421, in handle_one_request
+    method()
+  File "C:\Users\Vino\Documents\SKRIPSI\webgis_backend.py", line 955, in do_GET
+    self.respond_json(payload)
+  File "C:\Users\Vino\Documents\SKRIPSI\webgis_backend.py", line 1006, in respond_json
+    self.wfile.write(body)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\socketserver.py", line 826, in write
+    self._sock.sendall(b)
+ConnectionAbortedError: [WinError 10053] An established connection was aborted by the software in your host machine
+----------------------------------------
+127.0.0.1 - - [09/Jul/2026 10:17:39] "GET /api/predictions HTTP/1.1" 200 -
+----------------------------------------
+Exception occurred during processing of request from ('127.0.0.1', 54412)
+Traceback (most recent call last):
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\socketserver.py", line 683, in process_request_thread
+    self.finish_request(request, client_address)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\socketserver.py", line 360, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+  File "C:\Users\Vino\Documents\SKRIPSI\webgis_backend.py", line 923, in __init__
+    super().__init__(*args, directory=str(ROOT), **kwargs)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\http\server.py", line 668, in __init__
+    super().__init__(*args, **kwargs)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\socketserver.py", line 747, in __init__
+    self.handle()
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\http\server.py", line 433, in handle
+    self.handle_one_request()
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\http\server.py", line 421, in handle_one_request
+    method()
+  File "C:\Users\Vino\Documents\SKRIPSI\webgis_backend.py", line 955, in do_GET
+    self.respond_json(payload)
+  File "C:\Users\Vino\Documents\SKRIPSI\webgis_backend.py", line 1006, in respond_json
+    self.wfile.write(body)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\socketserver.py", line 826, in write
+    self._sock.sendall(b)
+ConnectionAbortedError: [WinError 10053] An established connection was aborted by the software in your host machine
+----------------------------------------
+127.0.0.1 - - [09/Jul/2026 10:17:40] "GET /api/predictions HTTP/1.1" 200 -
+----------------------------------------
+Exception occurred during processing of request from ('127.0.0.1', 54415)
+Traceback (most recent call last):
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\socketserver.py", line 683, in process_request_thread
+    self.finish_request(request, client_address)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\socketserver.py", line 360, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+  File "C:\Users\Vino\Documents\SKRIPSI\webgis_backend.py", line 923, in __init__
+    super().__init__(*args, directory=str(ROOT), **kwargs)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\http\server.py", line 668, in __init__
+    super().__init__(*args, **kwargs)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\socketserver.py", line 747, in __init__
+    self.handle()
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\http\server.py", line 433, in handle
+    self.handle_one_request()
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\http\server.py", line 421, in handle_one_request
+    method()
+  File "C:\Users\Vino\Documents\SKRIPSI\webgis_backend.py", line 955, in do_GET
+    self.respond_json(payload)
+  File "C:\Users\Vino\Documents\SKRIPSI\webgis_backend.py", line 1006, in respond_json
+    self.wfile.write(body)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\socketserver.py", line 826, in write
+    self._sock.sendall(b)
+ConnectionAbortedError: [WinError 10053] An established connection was aborted by the software in your host machine
+----------------------------------------
+127.0.0.1 - - [09/Jul/2026 10:17:45] "GET /api/predictions HTTP/1.1" 200 -
+----------------------------------------
+Exception occurred during processing of request from ('127.0.0.1', 54417)
+Traceback (most recent call last):
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\socketserver.py", line 683, in process_request_thread
+    self.finish_request(request, client_address)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\socketserver.py", line 360, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+  File "C:\Users\Vino\Documents\SKRIPSI\webgis_backend.py", line 923, in __init__
+    super().__init__(*args, directory=str(ROOT), **kwargs)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\http\server.py", line 668, in __init__
+    super().__init__(*args, **kwargs)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\socketserver.py", line 747, in __init__
+    self.handle()
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\http\server.py", line 433, in handle
+    self.handle_one_request()
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\http\server.py", line 421, in handle_one_request
+    method()
+  File "C:\Users\Vino\Documents\SKRIPSI\webgis_backend.py", line 955, in do_GET
+    self.respond_json(payload)
+  File "C:\Users\Vino\Documents\SKRIPSI\webgis_backend.py", line 1006, in respond_json
+    self.wfile.write(body)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\socketserver.py", line 826, in write
+    self._sock.sendall(b)
+ConnectionAbortedError: [WinError 10053] An established connection was aborted by the software in your host machine
+----------------------------------------
+127.0.0.1 - - [09/Jul/2026 10:17:47] "GET /api/predictions HTTP/1.1" 200 -
+----------------------------------------
+Exception occurred during processing of request from ('127.0.0.1', 53689)
+Traceback (most recent call last):
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\socketserver.py", line 683, in process_request_thread
+    self.finish_request(request, client_address)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\socketserver.py", line 360, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+  File "C:\Users\Vino\Documents\SKRIPSI\webgis_backend.py", line 923, in __init__
+    super().__init__(*args, directory=str(ROOT), **kwargs)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\http\server.py", line 668, in __init__
+    super().__init__(*args, **kwargs)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\socketserver.py", line 747, in __init__
+    self.handle()
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\http\server.py", line 433, in handle
+    self.handle_one_request()
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\http\server.py", line 421, in handle_one_request
+    method()
+  File "C:\Users\Vino\Documents\SKRIPSI\webgis_backend.py", line 955, in do_GET
+    self.respond_json(payload)
+  File "C:\Users\Vino\Documents\SKRIPSI\webgis_backend.py", line 1006, in respond_json
+    self.wfile.write(body)
+  File "C:\Users\Vino\anaconda3\envs\tf_env\lib\socketserver.py", line 826, in write
+    self._sock.sendall(b)
+ConnectionAbortedError: [WinError 10053] An established connection was aborted by the software in your host machine
+----------------------------------------
+127.0.0.1 - - [09/Jul/2026 10:17:47] "GET /api/predictions HTTP/1.1" 200 -

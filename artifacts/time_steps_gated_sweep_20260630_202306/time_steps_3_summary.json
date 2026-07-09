@@ -1,0 +1,1415 @@
+{
+  "time_steps": 3,
+  "run_timestamp": "20260630_204655",
+  "feature_count": 26,
+  "sequence_count": 133250,
+  "split_summary": {
+    "strategy": "chronological_per_district",
+    "train_ratio": 0.7,
+    "val_ratio": 0.15,
+    "time_steps": 3,
+    "sequence_counts": {
+      "train": 93260,
+      "val": 19990,
+      "test": 20000
+    },
+    "district_boundaries": {
+      "Cakung": {
+        "row_count": 13328,
+        "train_end_index": 9329,
+        "val_end_index": 11328,
+        "train_end_date": "2015-07-17T00:00:00",
+        "val_end_date": "2021-01-05T00:00:00",
+        "test_start_date": "2021-01-06T00:00:00"
+      },
+      "Cipayung": {
+        "row_count": 13328,
+        "train_end_index": 9329,
+        "val_end_index": 11328,
+        "train_end_date": "2015-07-17T00:00:00",
+        "val_end_date": "2021-01-05T00:00:00",
+        "test_start_date": "2021-01-06T00:00:00"
+      },
+      "Ciracas": {
+        "row_count": 13328,
+        "train_end_index": 9329,
+        "val_end_index": 11328,
+        "train_end_date": "2015-07-17T00:00:00",
+        "val_end_date": "2021-01-05T00:00:00",
+        "test_start_date": "2021-01-06T00:00:00"
+      },
+      "Duren Sawit": {
+        "row_count": 13328,
+        "train_end_index": 9329,
+        "val_end_index": 11328,
+        "train_end_date": "2015-07-17T00:00:00",
+        "val_end_date": "2021-01-05T00:00:00",
+        "test_start_date": "2021-01-06T00:00:00"
+      },
+      "Jatinegara": {
+        "row_count": 13328,
+        "train_end_index": 9329,
+        "val_end_index": 11328,
+        "train_end_date": "2015-07-17T00:00:00",
+        "val_end_date": "2021-01-05T00:00:00",
+        "test_start_date": "2021-01-06T00:00:00"
+      },
+      "Kramat Jati": {
+        "row_count": 13328,
+        "train_end_index": 9329,
+        "val_end_index": 11328,
+        "train_end_date": "2015-07-17T00:00:00",
+        "val_end_date": "2021-01-05T00:00:00",
+        "test_start_date": "2021-01-06T00:00:00"
+      },
+      "Makasar": {
+        "row_count": 13328,
+        "train_end_index": 9329,
+        "val_end_index": 11328,
+        "train_end_date": "2015-07-17T00:00:00",
+        "val_end_date": "2021-01-05T00:00:00",
+        "test_start_date": "2021-01-06T00:00:00"
+      },
+      "Matraman": {
+        "row_count": 13328,
+        "train_end_index": 9329,
+        "val_end_index": 11328,
+        "train_end_date": "2015-07-17T00:00:00",
+        "val_end_date": "2021-01-05T00:00:00",
+        "test_start_date": "2021-01-06T00:00:00"
+      },
+      "Pasar Rebo": {
+        "row_count": 13328,
+        "train_end_index": 9329,
+        "val_end_index": 11328,
+        "train_end_date": "2015-07-17T00:00:00",
+        "val_end_date": "2021-01-05T00:00:00",
+        "test_start_date": "2021-01-06T00:00:00"
+      },
+      "Pulo Gadung": {
+        "row_count": 13328,
+        "train_end_index": 9329,
+        "val_end_index": 11328,
+        "train_end_date": "2015-07-17T00:00:00",
+        "val_end_date": "2021-01-05T00:00:00",
+        "test_start_date": "2021-01-06T00:00:00"
+      }
+    }
+  },
+  "class_distribution_total": {
+    "0": 75595,
+    "1": 50932,
+    "2": 6510,
+    "3": 243
+  },
+  "class_weights_lstm": {
+    "0": 0.6568406765078743,
+    "1": 0.8126771606666852,
+    "2": 2.4756968025698276,
+    "3": 14.300963039587549
+  },
+  "lstm_config": {
+    "units_1": 64,
+    "units_2": 32,
+    "dropout": 0.2,
+    "dense_units": 16,
+    "learning_rate": 0.001,
+    "batch_size": 64
+  },
+  "smote_summary": {
+    "distribution_before": {
+      "0": 54040,
+      "1": 35302,
+      "2": 3804,
+      "3": 114
+    },
+    "sampling_strategy": {
+      "2": 21616,
+      "3": 5404
+    },
+    "k_neighbors": 5,
+    "distribution_after": {
+      "0": 54040,
+      "1": 35302,
+      "2": 21616,
+      "3": 5404
+    }
+  },
+  "best_xgb_candidate": {
+    "name": "XGB_3",
+    "params": {
+      "max_depth": 6,
+      "learning_rate": 0.03,
+      "n_estimators": 450,
+      "subsample": 0.8,
+      "colsample_bytree": 0.9,
+      "min_child_weight": 2
+    },
+    "selection_score": 0.459695,
+    "ensemble_rule": {
+      "enabled": true,
+      "class_2_threshold": 0.65,
+      "class_3_threshold": 0.35,
+      "class_2_margin": 0.0,
+      "class_3_margin": 0.05,
+      "selection_score": 0.459695,
+      "description": "LSTM menjadi prediksi dasar. XGBoost hanya boleh override ke kelas 2 atau 3 saat probabilitas laten cukup kuat."
+    },
+    "decision_rule": {
+      "enabled": true,
+      "extreme_threshold": 0.35,
+      "extreme_margin": 0.05,
+      "description": "Alias backward-compatible untuk gate kelas 3 pada mode gated ensemble."
+    },
+    "val_metrics_after_rule": {
+      "accuracy": 0.685393,
+      "macro_recall": 0.409482,
+      "macro_f1": 0.40018,
+      "critical_recall": 0.072289,
+      "critical_precision": 0.020134,
+      "critical_f1": 0.031496
+    },
+    "val_metrics_lstm_argmax": {
+      "accuracy": 0.708004,
+      "macro_recall": 0.38844,
+      "macro_f1": 0.381766,
+      "critical_recall": 0.0,
+      "critical_precision": 0.0,
+      "critical_f1": 0.0
+    },
+    "val_metrics_argmax": {
+      "accuracy": 0.633417,
+      "macro_recall": 0.424075,
+      "macro_f1": 0.390348,
+      "critical_recall": 0.072289,
+      "critical_precision": 0.01875,
+      "critical_f1": 0.029777
+    },
+    "rule_grid_top5": [
+      {
+        "enabled": true,
+        "class_2_threshold": 0.65,
+        "class_3_threshold": 0.35,
+        "class_2_margin": 0.0,
+        "class_3_margin": 0.05,
+        "selection_score": 0.459695,
+        "accuracy": 0.685393,
+        "macro_recall": 0.409482,
+        "macro_f1": 0.40018,
+        "critical_recall": 0.072289,
+        "critical_precision": 0.020134,
+        "critical_f1": 0.031496
+      },
+      {
+        "enabled": true,
+        "class_2_threshold": 0.65,
+        "class_3_threshold": 0.35,
+        "class_2_margin": 0.02,
+        "class_3_margin": 0.05,
+        "selection_score": 0.459695,
+        "accuracy": 0.685393,
+        "macro_recall": 0.409482,
+        "macro_f1": 0.40018,
+        "critical_recall": 0.072289,
+        "critical_precision": 0.020134,
+        "critical_f1": 0.031496
+      },
+      {
+        "enabled": true,
+        "class_2_threshold": 0.65,
+        "class_3_threshold": 0.35,
+        "class_2_margin": 0.05,
+        "class_3_margin": 0.05,
+        "selection_score": 0.459695,
+        "accuracy": 0.685393,
+        "macro_recall": 0.409482,
+        "macro_f1": 0.40018,
+        "critical_recall": 0.072289,
+        "critical_precision": 0.020134,
+        "critical_f1": 0.031496
+      },
+      {
+        "enabled": true,
+        "class_2_threshold": 0.65,
+        "class_3_threshold": 0.55,
+        "class_2_margin": 0.0,
+        "class_3_margin": 0.0,
+        "selection_score": 0.459586,
+        "accuracy": 0.689645,
+        "macro_recall": 0.406945,
+        "macro_f1": 0.402443,
+        "critical_recall": 0.048193,
+        "critical_precision": 0.025,
+        "critical_f1": 0.032922
+      },
+      {
+        "enabled": true,
+        "class_2_threshold": 0.65,
+        "class_3_threshold": 0.55,
+        "class_2_margin": 0.0,
+        "class_3_margin": 0.02,
+        "selection_score": 0.459586,
+        "accuracy": 0.689645,
+        "macro_recall": 0.406945,
+        "macro_f1": 0.402443,
+        "critical_recall": 0.048193,
+        "critical_precision": 0.025,
+        "critical_f1": 0.032922
+      }
+    ]
+  },
+  "ensemble_rule": {
+    "enabled": true,
+    "class_2_threshold": 0.65,
+    "class_3_threshold": 0.35,
+    "class_2_margin": 0.0,
+    "class_3_margin": 0.05,
+    "selection_score": 0.459695,
+    "description": "LSTM menjadi prediksi dasar. XGBoost hanya boleh override ke kelas 2 atau 3 saat probabilitas laten cukup kuat."
+  },
+  "metrics_gated": {
+    "accuracy": 0.5965,
+    "macro_precision": 0.3769186375775818,
+    "macro_recall": 0.40036682577787314,
+    "macro_f1": 0.36730944613669647,
+    "critical_recall": 0.1956521739130435,
+    "critical_precision": 0.02912621359223301,
+    "critical_f1": 0.05070422535211268,
+    "classification_report": {
+      "0_Cerah (<5mm)": {
+        "precision": 0.7324152060095607,
+        "recall": 0.6275599765944997,
+        "f1-score": 0.6759453781512605,
+        "support": 10254.0
+      },
+      "1_Ringan (5-20mm)": {
+        "precision": 0.5297714514835605,
+        "recall": 0.6555445298933267,
+        "f1-score": 0.585985142476993,
+        "support": 8062.0
+      },
+      "2_Sedang (20-50mm)": {
+        "precision": 0.2163616792249731,
+        "recall": 0.1227106227106227,
+        "f1-score": 0.15660303856641994,
+        "support": 1638.0
+      },
+      "3_Lebat/Ekstrem (>=50mm)": {
+        "precision": 0.02912621359223301,
+        "recall": 0.1956521739130435,
+        "f1-score": 0.05070422535211268,
+        "support": 46.0
+      },
+      "accuracy": 0.5965,
+      "macro avg": {
+        "precision": 0.3769186375775818,
+        "recall": 0.40036682577787314,
+        "f1-score": 0.36730944613669647,
+        "support": 20000.0
+      },
+      "weighted avg": {
+        "precision": 0.6068471600339124,
+        "recall": 0.5965,
+        "f1-score": 0.5957102148875268,
+        "support": 20000.0
+      }
+    },
+    "confusion_matrix": [
+      [
+        6435,
+        3553,
+        190,
+        76
+      ],
+      [
+        2080,
+        5285,
+        529,
+        168
+      ],
+      [
+        263,
+        1118,
+        201,
+        56
+      ],
+      [
+        8,
+        20,
+        9,
+        9
+      ]
+    ],
+    "predicted_class_distribution": {
+      "0": 8786,
+      "1": 9976,
+      "2": 929,
+      "3": 309
+    },
+    "true_class_distribution": {
+      "0": 10254,
+      "1": 8062,
+      "2": 1638,
+      "3": 46
+    },
+    "sample_predictions": [
+      {
+        "true_class": 2,
+        "pred_class": 1,
+        "probabilities": [
+          0.1467,
+          0.5904,
+          0.1916,
+          0.0714
+        ]
+      },
+      {
+        "true_class": 0,
+        "pred_class": 1,
+        "probabilities": [
+          0.0652,
+          0.4229,
+          0.3315,
+          0.1803
+        ]
+      },
+      {
+        "true_class": 1,
+        "pred_class": 1,
+        "probabilities": [
+          0.1941,
+          0.604,
+          0.1767,
+          0.0251
+        ]
+      },
+      {
+        "true_class": 2,
+        "pred_class": 1,
+        "probabilities": [
+          0.1599,
+          0.6687,
+          0.1656,
+          0.0058
+        ]
+      },
+      {
+        "true_class": 1,
+        "pred_class": 2,
+        "probabilities": [
+          0.0434,
+          0.425,
+          0.4272,
+          0.1044
+        ]
+      },
+      {
+        "true_class": 0,
+        "pred_class": 1,
+        "probabilities": [
+          0.0949,
+          0.547,
+          0.2799,
+          0.0782
+        ]
+      },
+      {
+        "true_class": 1,
+        "pred_class": 1,
+        "probabilities": [
+          0.2608,
+          0.6296,
+          0.1059,
+          0.0037
+        ]
+      },
+      {
+        "true_class": 1,
+        "pred_class": 1,
+        "probabilities": [
+          0.1972,
+          0.6509,
+          0.1448,
+          0.0071
+        ]
+      },
+      {
+        "true_class": 0,
+        "pred_class": 1,
+        "probabilities": [
+          0.134,
+          0.5115,
+          0.2129,
+          0.1416
+        ]
+      },
+      {
+        "true_class": 0,
+        "pred_class": 1,
+        "probabilities": [
+          0.321,
+          0.6003,
+          0.0767,
+          0.0021
+        ]
+      }
+    ]
+  },
+  "metrics_lstm_argmax": {
+    "accuracy": 0.61835,
+    "macro_precision": 0.3898565854975408,
+    "macro_recall": 0.35062395058965307,
+    "macro_f1": 0.34410965451017295,
+    "critical_recall": 0.0,
+    "critical_precision": 0.0,
+    "critical_f1": 0.0,
+    "classification_report": {
+      "0_Cerah (<5mm)": {
+        "precision": 0.7319704713231119,
+        "recall": 0.6285352057733568,
+        "f1-score": 0.6763208982632877,
+        "support": 10254.0
+      },
+      "1_Ringan (5-20mm)": {
+        "precision": 0.5350370981038747,
+        "recall": 0.724510047134706,
+        "f1-score": 0.6155224195163075,
+        "support": 8062.0
+      },
+      "2_Sedang (20-50mm)": {
+        "precision": 0.2924187725631769,
+        "recall": 0.04945054945054945,
+        "f1-score": 0.0845953002610966,
+        "support": 1638.0
+      },
+      "3_Lebat/Ekstrem (>=50mm)": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1-score": 0.0,
+        "support": 46.0
+      },
+      "accuracy": 0.61835,
+      "macro avg": {
+        "precision": 0.3898565854975408,
+        "recall": 0.35062395058965307,
+        "f1-score": 0.34410965451017295,
+        "support": 20000.0
+      },
+      "weighted avg": {
+        "precision": 0.6149038123659556,
+        "recall": 0.61835,
+        "f1-score": 0.601795166937995,
+        "support": 20000.0
+      }
+    },
+    "confusion_matrix": [
+      [
+        6445,
+        3758,
+        51,
+        0
+      ],
+      [
+        2088,
+        5841,
+        132,
+        1
+      ],
+      [
+        264,
+        1293,
+        81,
+        0
+      ],
+      [
+        8,
+        25,
+        13,
+        0
+      ]
+    ],
+    "predicted_class_distribution": {
+      "0": 8805,
+      "1": 10917,
+      "2": 277,
+      "3": 1
+    },
+    "true_class_distribution": {
+      "0": 10254,
+      "1": 8062,
+      "2": 1638,
+      "3": 46
+    },
+    "sample_predictions": [
+      {
+        "true_class": 2,
+        "pred_class": 1,
+        "probabilities": [
+          0.1467,
+          0.5904,
+          0.1916,
+          0.0714
+        ]
+      },
+      {
+        "true_class": 0,
+        "pred_class": 1,
+        "probabilities": [
+          0.0652,
+          0.4229,
+          0.3315,
+          0.1803
+        ]
+      },
+      {
+        "true_class": 1,
+        "pred_class": 1,
+        "probabilities": [
+          0.1941,
+          0.604,
+          0.1767,
+          0.0251
+        ]
+      },
+      {
+        "true_class": 2,
+        "pred_class": 1,
+        "probabilities": [
+          0.1599,
+          0.6687,
+          0.1656,
+          0.0058
+        ]
+      },
+      {
+        "true_class": 1,
+        "pred_class": 2,
+        "probabilities": [
+          0.0434,
+          0.425,
+          0.4272,
+          0.1044
+        ]
+      },
+      {
+        "true_class": 0,
+        "pred_class": 1,
+        "probabilities": [
+          0.0949,
+          0.547,
+          0.2799,
+          0.0782
+        ]
+      },
+      {
+        "true_class": 1,
+        "pred_class": 1,
+        "probabilities": [
+          0.2608,
+          0.6296,
+          0.1059,
+          0.0037
+        ]
+      },
+      {
+        "true_class": 1,
+        "pred_class": 1,
+        "probabilities": [
+          0.1972,
+          0.6509,
+          0.1448,
+          0.0071
+        ]
+      },
+      {
+        "true_class": 0,
+        "pred_class": 1,
+        "probabilities": [
+          0.134,
+          0.5115,
+          0.2129,
+          0.1416
+        ]
+      },
+      {
+        "true_class": 0,
+        "pred_class": 1,
+        "probabilities": [
+          0.321,
+          0.6003,
+          0.0767,
+          0.0021
+        ]
+      }
+    ]
+  },
+  "metrics_xgb_argmax": {
+    "accuracy": 0.5378,
+    "macro_precision": 0.3563123109155487,
+    "macro_recall": 0.40523985132126944,
+    "macro_f1": 0.35540623020793555,
+    "critical_recall": 0.1956521739130435,
+    "critical_precision": 0.02601156069364162,
+    "critical_f1": 0.04591836734693878,
+    "classification_report": {
+      "0_Cerah (<5mm)": {
+        "precision": 0.7326245999085506,
+        "recall": 0.6250243807294714,
+        "f1-score": 0.6745605725713083,
+        "support": 10254.0
+      },
+      "1_Ringan (5-20mm)": {
+        "precision": 0.5119946091644205,
+        "recall": 0.4712230215827338,
+        "f1-score": 0.490763467252293,
+        "support": 8062.0
+      },
+      "2_Sedang (20-50mm)": {
+        "precision": 0.15461847389558234,
+        "recall": 0.32905982905982906,
+        "f1-score": 0.2103825136612022,
+        "support": 1638.0
+      },
+      "3_Lebat/Ekstrem (>=50mm)": {
+        "precision": 0.02601156069364162,
+        "recall": 0.1956521739130435,
+        "f1-score": 0.04591836734693878,
+        "support": 46.0
+      },
+      "accuracy": 0.5378,
+      "macro avg": {
+        "precision": 0.3563123109155487,
+        "recall": 0.40523985132126944,
+        "f1-score": 0.35540623020793555,
+        "support": 20000.0
+      },
+      "weighted avg": {
+        "precision": 0.5947247389289353,
+        "recall": 0.5378,
+        "f1-score": 0.5610098993204594,
+        "support": 20000.0
+      }
+    },
+    "confusion_matrix": [
+      [
+        6409,
+        2810,
+        948,
+        87
+      ],
+      [
+        2082,
+        3799,
+        1990,
+        191
+      ],
+      [
+        249,
+        791,
+        539,
+        59
+      ],
+      [
+        8,
+        20,
+        9,
+        9
+      ]
+    ],
+    "predicted_class_distribution": {
+      "0": 8748,
+      "1": 7420,
+      "2": 3486,
+      "3": 346
+    },
+    "true_class_distribution": {
+      "0": 10254,
+      "1": 8062,
+      "2": 1638,
+      "3": 46
+    },
+    "sample_predictions": [
+      {
+        "true_class": 2,
+        "pred_class": 2,
+        "probabilities": [
+          0.0968,
+          0.4224,
+          0.4645,
+          0.0163
+        ]
+      },
+      {
+        "true_class": 0,
+        "pred_class": 1,
+        "probabilities": [
+          0.0028,
+          0.4745,
+          0.1738,
+          0.3489
+        ]
+      },
+      {
+        "true_class": 1,
+        "pred_class": 1,
+        "probabilities": [
+          0.1179,
+          0.5713,
+          0.3026,
+          0.0082
+        ]
+      },
+      {
+        "true_class": 2,
+        "pred_class": 1,
+        "probabilities": [
+          0.1204,
+          0.5514,
+          0.3277,
+          0.0005
+        ]
+      },
+      {
+        "true_class": 1,
+        "pred_class": 2,
+        "probabilities": [
+          0.0211,
+          0.2308,
+          0.703,
+          0.0452
+        ]
+      },
+      {
+        "true_class": 0,
+        "pred_class": 2,
+        "probabilities": [
+          0.0466,
+          0.3212,
+          0.5156,
+          0.1167
+        ]
+      },
+      {
+        "true_class": 1,
+        "pred_class": 1,
+        "probabilities": [
+          0.1243,
+          0.5595,
+          0.316,
+          0.0002
+        ]
+      },
+      {
+        "true_class": 1,
+        "pred_class": 1,
+        "probabilities": [
+          0.1256,
+          0.506,
+          0.368,
+          0.0004
+        ]
+      },
+      {
+        "true_class": 0,
+        "pred_class": 2,
+        "probabilities": [
+          0.0406,
+          0.1729,
+          0.4275,
+          0.359
+        ]
+      },
+      {
+        "true_class": 0,
+        "pred_class": 1,
+        "probabilities": [
+          0.248,
+          0.4751,
+          0.2767,
+          0.0002
+        ]
+      }
+    ]
+  },
+  "training_history": {
+    "accuracy": [
+      0.7236221432685852,
+      0.7333369255065918,
+      0.7339051961898804,
+      0.7338408827781677,
+      0.7343448400497437,
+      0.7321574091911316,
+      0.732779324054718,
+      0.7335621118545532,
+      0.7329080104827881,
+      0.734441339969635,
+      0.7330902814865112,
+      0.73404461145401,
+      0.7339159250259399,
+      0.7351276278495789,
+      0.7351061701774597
+    ],
+    "loss": [
+      0.6835574507713318,
+      0.6468916535377502,
+      0.639128565788269,
+      0.6333802342414856,
+      0.6289061903953552,
+      0.6256913542747498,
+      0.6205219030380249,
+      0.6149080991744995,
+      0.6127420663833618,
+      0.6028631925582886,
+      0.5943976044654846,
+      0.5897454023361206,
+      0.5831913948059082,
+      0.5761702656745911,
+      0.5727100968360901
+    ],
+    "val_accuracy": [
+      0.7093546986579895,
+      0.7107553482055664,
+      0.7085542678833008,
+      0.7045522928237915,
+      0.7080039978027344,
+      0.7046023011207581,
+      0.7094547152519226,
+      0.7095547914505005,
+      0.6992496252059937,
+      0.6983991861343384,
+      0.702051043510437,
+      0.6961480975151062,
+      0.6935967803001404,
+      0.6977989077568054,
+      0.6959980130195618
+    ],
+    "val_loss": [
+      0.7165511250495911,
+      0.7147692441940308,
+      0.7157248258590698,
+      0.7256705164909363,
+      0.712901771068573,
+      0.7211654186248779,
+      0.7138639092445374,
+      0.7159945964813232,
+      0.7727722525596619,
+      0.72744220495224,
+      0.7220277786254883,
+      0.7349053621292114,
+      0.7358012199401855,
+      0.7278168201446533,
+      0.7376575469970703
+    ],
+    "learning_rate": [
+      0.0010000000474974513,
+      0.0010000000474974513,
+      0.0010000000474974513,
+      0.0010000000474974513,
+      0.0010000000474974513,
+      0.0010000000474974513,
+      0.0010000000474974513,
+      0.0010000000474974513,
+      0.0010000000474974513,
+      0.0005000000237487257,
+      0.0005000000237487257,
+      0.0005000000237487257,
+      0.0005000000237487257,
+      0.0002500000118743628,
+      0.0002500000118743628
+    ]
+  },
+  "xgb_candidate_rows": [
+    {
+      "name": "XGB_1",
+      "params": {
+        "max_depth": 4,
+        "learning_rate": 0.05,
+        "n_estimators": 250,
+        "subsample": 0.8,
+        "colsample_bytree": 0.8,
+        "min_child_weight": 1
+      },
+      "selection_score": 0.45756,
+      "ensemble_rule": {
+        "enabled": true,
+        "class_2_threshold": 0.65,
+        "class_3_threshold": 0.35,
+        "class_2_margin": 0.0,
+        "class_3_margin": 0.02,
+        "selection_score": 0.45756,
+        "description": "LSTM menjadi prediksi dasar. XGBoost hanya boleh override ke kelas 2 atau 3 saat probabilitas laten cukup kuat."
+      },
+      "decision_rule": {
+        "enabled": true,
+        "extreme_threshold": 0.35,
+        "extreme_margin": 0.02,
+        "description": "Alias backward-compatible untuk gate kelas 3 pada mode gated ensemble."
+      },
+      "val_metrics_after_rule": {
+        "accuracy": 0.68039,
+        "macro_recall": 0.409999,
+        "macro_f1": 0.398744,
+        "critical_recall": 0.084337,
+        "critical_precision": 0.012411,
+        "critical_f1": 0.021638
+      },
+      "val_metrics_lstm_argmax": {
+        "accuracy": 0.708004,
+        "macro_recall": 0.38844,
+        "macro_f1": 0.381766,
+        "critical_recall": 0.0,
+        "critical_precision": 0.0,
+        "critical_f1": 0.0
+      },
+      "val_metrics_argmax": {
+        "accuracy": 0.618109,
+        "macro_recall": 0.424345,
+        "macro_f1": 0.383047,
+        "critical_recall": 0.084337,
+        "critical_precision": 0.011745,
+        "critical_f1": 0.020619
+      },
+      "rule_grid_top5": [
+        {
+          "enabled": true,
+          "class_2_threshold": 0.65,
+          "class_3_threshold": 0.35,
+          "class_2_margin": 0.0,
+          "class_3_margin": 0.02,
+          "selection_score": 0.45756,
+          "accuracy": 0.68039,
+          "macro_recall": 0.409999,
+          "macro_f1": 0.398744,
+          "critical_recall": 0.084337,
+          "critical_precision": 0.012411,
+          "critical_f1": 0.021638
+        },
+        {
+          "enabled": true,
+          "class_2_threshold": 0.65,
+          "class_3_threshold": 0.35,
+          "class_2_margin": 0.02,
+          "class_3_margin": 0.02,
+          "selection_score": 0.45756,
+          "accuracy": 0.68039,
+          "macro_recall": 0.409999,
+          "macro_f1": 0.398744,
+          "critical_recall": 0.084337,
+          "critical_precision": 0.012411,
+          "critical_f1": 0.021638
+        },
+        {
+          "enabled": true,
+          "class_2_threshold": 0.65,
+          "class_3_threshold": 0.35,
+          "class_2_margin": 0.05,
+          "class_3_margin": 0.02,
+          "selection_score": 0.45756,
+          "accuracy": 0.68039,
+          "macro_recall": 0.409999,
+          "macro_f1": 0.398744,
+          "critical_recall": 0.084337,
+          "critical_precision": 0.012411,
+          "critical_f1": 0.021638
+        },
+        {
+          "enabled": true,
+          "class_2_threshold": 0.65,
+          "class_3_threshold": 0.5,
+          "class_2_margin": 0.0,
+          "class_3_margin": 0.0,
+          "selection_score": 0.45724,
+          "accuracy": 0.685293,
+          "macro_recall": 0.407464,
+          "macro_f1": 0.400158,
+          "critical_recall": 0.060241,
+          "critical_precision": 0.01269,
+          "critical_f1": 0.020964
+        },
+        {
+          "enabled": true,
+          "class_2_threshold": 0.65,
+          "class_3_threshold": 0.5,
+          "class_2_margin": 0.0,
+          "class_3_margin": 0.02,
+          "selection_score": 0.45724,
+          "accuracy": 0.685293,
+          "macro_recall": 0.407464,
+          "macro_f1": 0.400158,
+          "critical_recall": 0.060241,
+          "critical_precision": 0.01269,
+          "critical_f1": 0.020964
+        }
+      ]
+    },
+    {
+      "name": "XGB_2",
+      "params": {
+        "max_depth": 5,
+        "learning_rate": 0.05,
+        "n_estimators": 350,
+        "subsample": 0.9,
+        "colsample_bytree": 0.8,
+        "min_child_weight": 2
+      },
+      "selection_score": 0.456635,
+      "ensemble_rule": {
+        "enabled": true,
+        "class_2_threshold": 0.65,
+        "class_3_threshold": 0.5,
+        "class_2_margin": 0.0,
+        "class_3_margin": 0.0,
+        "selection_score": 0.456635,
+        "description": "LSTM menjadi prediksi dasar. XGBoost hanya boleh override ke kelas 2 atau 3 saat probabilitas laten cukup kuat."
+      },
+      "decision_rule": {
+        "enabled": true,
+        "extreme_threshold": 0.5,
+        "extreme_margin": 0.0,
+        "description": "Alias backward-compatible untuk gate kelas 3 pada mode gated ensemble."
+      },
+      "val_metrics_after_rule": {
+        "accuracy": 0.686443,
+        "macro_recall": 0.405641,
+        "macro_f1": 0.399882,
+        "critical_recall": 0.048193,
+        "critical_precision": 0.016878,
+        "critical_f1": 0.025
+      },
+      "val_metrics_lstm_argmax": {
+        "accuracy": 0.708004,
+        "macro_recall": 0.38844,
+        "macro_f1": 0.381766,
+        "critical_recall": 0.0,
+        "critical_precision": 0.0,
+        "critical_f1": 0.0
+      },
+      "val_metrics_argmax": {
+        "accuracy": 0.630015,
+        "macro_recall": 0.418598,
+        "macro_f1": 0.386683,
+        "critical_recall": 0.060241,
+        "critical_precision": 0.014006,
+        "critical_f1": 0.022727
+      },
+      "rule_grid_top5": [
+        {
+          "enabled": true,
+          "class_2_threshold": 0.65,
+          "class_3_threshold": 0.5,
+          "class_2_margin": 0.0,
+          "class_3_margin": 0.0,
+          "selection_score": 0.456635,
+          "accuracy": 0.686443,
+          "macro_recall": 0.405641,
+          "macro_f1": 0.399882,
+          "critical_recall": 0.048193,
+          "critical_precision": 0.016878,
+          "critical_f1": 0.025
+        },
+        {
+          "enabled": true,
+          "class_2_threshold": 0.65,
+          "class_3_threshold": 0.5,
+          "class_2_margin": 0.0,
+          "class_3_margin": 0.02,
+          "selection_score": 0.456635,
+          "accuracy": 0.686443,
+          "macro_recall": 0.405641,
+          "macro_f1": 0.399882,
+          "critical_recall": 0.048193,
+          "critical_precision": 0.016878,
+          "critical_f1": 0.025
+        },
+        {
+          "enabled": true,
+          "class_2_threshold": 0.65,
+          "class_3_threshold": 0.5,
+          "class_2_margin": 0.0,
+          "class_3_margin": 0.05,
+          "selection_score": 0.456635,
+          "accuracy": 0.686443,
+          "macro_recall": 0.405641,
+          "macro_f1": 0.399882,
+          "critical_recall": 0.048193,
+          "critical_precision": 0.016878,
+          "critical_f1": 0.025
+        },
+        {
+          "enabled": true,
+          "class_2_threshold": 0.65,
+          "class_3_threshold": 0.5,
+          "class_2_margin": 0.02,
+          "class_3_margin": 0.0,
+          "selection_score": 0.456635,
+          "accuracy": 0.686443,
+          "macro_recall": 0.405641,
+          "macro_f1": 0.399882,
+          "critical_recall": 0.048193,
+          "critical_precision": 0.016878,
+          "critical_f1": 0.025
+        },
+        {
+          "enabled": true,
+          "class_2_threshold": 0.65,
+          "class_3_threshold": 0.5,
+          "class_2_margin": 0.02,
+          "class_3_margin": 0.02,
+          "selection_score": 0.456635,
+          "accuracy": 0.686443,
+          "macro_recall": 0.405641,
+          "macro_f1": 0.399882,
+          "critical_recall": 0.048193,
+          "critical_precision": 0.016878,
+          "critical_f1": 0.025
+        }
+      ]
+    },
+    {
+      "name": "XGB_3",
+      "params": {
+        "max_depth": 6,
+        "learning_rate": 0.03,
+        "n_estimators": 450,
+        "subsample": 0.8,
+        "colsample_bytree": 0.9,
+        "min_child_weight": 2
+      },
+      "selection_score": 0.459695,
+      "ensemble_rule": {
+        "enabled": true,
+        "class_2_threshold": 0.65,
+        "class_3_threshold": 0.35,
+        "class_2_margin": 0.0,
+        "class_3_margin": 0.05,
+        "selection_score": 0.459695,
+        "description": "LSTM menjadi prediksi dasar. XGBoost hanya boleh override ke kelas 2 atau 3 saat probabilitas laten cukup kuat."
+      },
+      "decision_rule": {
+        "enabled": true,
+        "extreme_threshold": 0.35,
+        "extreme_margin": 0.05,
+        "description": "Alias backward-compatible untuk gate kelas 3 pada mode gated ensemble."
+      },
+      "val_metrics_after_rule": {
+        "accuracy": 0.685393,
+        "macro_recall": 0.409482,
+        "macro_f1": 0.40018,
+        "critical_recall": 0.072289,
+        "critical_precision": 0.020134,
+        "critical_f1": 0.031496
+      },
+      "val_metrics_lstm_argmax": {
+        "accuracy": 0.708004,
+        "macro_recall": 0.38844,
+        "macro_f1": 0.381766,
+        "critical_recall": 0.0,
+        "critical_precision": 0.0,
+        "critical_f1": 0.0
+      },
+      "val_metrics_argmax": {
+        "accuracy": 0.633417,
+        "macro_recall": 0.424075,
+        "macro_f1": 0.390348,
+        "critical_recall": 0.072289,
+        "critical_precision": 0.01875,
+        "critical_f1": 0.029777
+      },
+      "rule_grid_top5": [
+        {
+          "enabled": true,
+          "class_2_threshold": 0.65,
+          "class_3_threshold": 0.35,
+          "class_2_margin": 0.0,
+          "class_3_margin": 0.05,
+          "selection_score": 0.459695,
+          "accuracy": 0.685393,
+          "macro_recall": 0.409482,
+          "macro_f1": 0.40018,
+          "critical_recall": 0.072289,
+          "critical_precision": 0.020134,
+          "critical_f1": 0.031496
+        },
+        {
+          "enabled": true,
+          "class_2_threshold": 0.65,
+          "class_3_threshold": 0.35,
+          "class_2_margin": 0.02,
+          "class_3_margin": 0.05,
+          "selection_score": 0.459695,
+          "accuracy": 0.685393,
+          "macro_recall": 0.409482,
+          "macro_f1": 0.40018,
+          "critical_recall": 0.072289,
+          "critical_precision": 0.020134,
+          "critical_f1": 0.031496
+        },
+        {
+          "enabled": true,
+          "class_2_threshold": 0.65,
+          "class_3_threshold": 0.35,
+          "class_2_margin": 0.05,
+          "class_3_margin": 0.05,
+          "selection_score": 0.459695,
+          "accuracy": 0.685393,
+          "macro_recall": 0.409482,
+          "macro_f1": 0.40018,
+          "critical_recall": 0.072289,
+          "critical_precision": 0.020134,
+          "critical_f1": 0.031496
+        },
+        {
+          "enabled": true,
+          "class_2_threshold": 0.65,
+          "class_3_threshold": 0.55,
+          "class_2_margin": 0.0,
+          "class_3_margin": 0.0,
+          "selection_score": 0.459586,
+          "accuracy": 0.689645,
+          "macro_recall": 0.406945,
+          "macro_f1": 0.402443,
+          "critical_recall": 0.048193,
+          "critical_precision": 0.025,
+          "critical_f1": 0.032922
+        },
+        {
+          "enabled": true,
+          "class_2_threshold": 0.65,
+          "class_3_threshold": 0.55,
+          "class_2_margin": 0.0,
+          "class_3_margin": 0.02,
+          "selection_score": 0.459586,
+          "accuracy": 0.689645,
+          "macro_recall": 0.406945,
+          "macro_f1": 0.402443,
+          "critical_recall": 0.048193,
+          "critical_precision": 0.025,
+          "critical_f1": 0.032922
+        }
+      ]
+    },
+    {
+      "name": "XGB_4",
+      "params": {
+        "max_depth": 4,
+        "learning_rate": 0.08,
+        "n_estimators": 220,
+        "subsample": 0.9,
+        "colsample_bytree": 0.9,
+        "min_child_weight": 1
+      },
+      "selection_score": 0.45645,
+      "ensemble_rule": {
+        "enabled": true,
+        "class_2_threshold": 0.65,
+        "class_3_threshold": 0.45,
+        "class_2_margin": 0.0,
+        "class_3_margin": 0.05,
+        "selection_score": 0.45645,
+        "description": "LSTM menjadi prediksi dasar. XGBoost hanya boleh override ke kelas 2 atau 3 saat probabilitas laten cukup kuat."
+      },
+      "decision_rule": {
+        "enabled": true,
+        "extreme_threshold": 0.45,
+        "extreme_margin": 0.05,
+        "description": "Alias backward-compatible untuk gate kelas 3 pada mode gated ensemble."
+      },
+      "val_metrics_after_rule": {
+        "accuracy": 0.683692,
+        "macro_recall": 0.40724,
+        "macro_f1": 0.399473,
+        "critical_recall": 0.060241,
+        "critical_precision": 0.01355,
+        "critical_f1": 0.022124
+      },
+      "val_metrics_lstm_argmax": {
+        "accuracy": 0.708004,
+        "macro_recall": 0.38844,
+        "macro_f1": 0.381766,
+        "critical_recall": 0.0,
+        "critical_precision": 0.0,
+        "critical_f1": 0.0
+      },
+      "val_metrics_argmax": {
+        "accuracy": 0.622161,
+        "macro_recall": 0.41932,
+        "macro_f1": 0.383421,
+        "critical_recall": 0.060241,
+        "critical_precision": 0.010246,
+        "critical_f1": 0.017513
+      },
+      "rule_grid_top5": [
+        {
+          "enabled": true,
+          "class_2_threshold": 0.65,
+          "class_3_threshold": 0.45,
+          "class_2_margin": 0.0,
+          "class_3_margin": 0.05,
+          "selection_score": 0.45645,
+          "accuracy": 0.683692,
+          "macro_recall": 0.40724,
+          "macro_f1": 0.399473,
+          "critical_recall": 0.060241,
+          "critical_precision": 0.01355,
+          "critical_f1": 0.022124
+        },
+        {
+          "enabled": true,
+          "class_2_threshold": 0.65,
+          "class_3_threshold": 0.45,
+          "class_2_margin": 0.02,
+          "class_3_margin": 0.05,
+          "selection_score": 0.45645,
+          "accuracy": 0.683692,
+          "macro_recall": 0.40724,
+          "macro_f1": 0.399473,
+          "critical_recall": 0.060241,
+          "critical_precision": 0.01355,
+          "critical_f1": 0.022124
+        },
+        {
+          "enabled": true,
+          "class_2_threshold": 0.65,
+          "class_3_threshold": 0.45,
+          "class_2_margin": 0.05,
+          "class_3_margin": 0.05,
+          "selection_score": 0.45645,
+          "accuracy": 0.683692,
+          "macro_recall": 0.40724,
+          "macro_f1": 0.399473,
+          "critical_recall": 0.060241,
+          "critical_precision": 0.01355,
+          "critical_f1": 0.022124
+        },
+        {
+          "enabled": true,
+          "class_2_threshold": 0.65,
+          "class_3_threshold": 0.45,
+          "class_2_margin": 0.0,
+          "class_3_margin": 0.02,
+          "selection_score": 0.456445,
+          "accuracy": 0.683692,
+          "macro_recall": 0.40724,
+          "macro_f1": 0.39947,
+          "critical_recall": 0.060241,
+          "critical_precision": 0.013514,
+          "critical_f1": 0.022075
+        },
+        {
+          "enabled": true,
+          "class_2_threshold": 0.65,
+          "class_3_threshold": 0.45,
+          "class_2_margin": 0.02,
+          "class_3_margin": 0.02,
+          "selection_score": 0.456445,
+          "accuracy": 0.683692,
+          "macro_recall": 0.40724,
+          "macro_f1": 0.39947,
+          "critical_recall": 0.060241,
+          "critical_precision": 0.013514,
+          "critical_f1": 0.022075
+        }
+      ]
+    }
+  ]
+}

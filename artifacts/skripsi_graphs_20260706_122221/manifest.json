@@ -1,0 +1,21 @@
+{
+  "generated_at": "2026-07-06T12:22:43.734679",
+  "output_dir": "C:\\Users\\Vino\\Documents\\SKRIPSI\\artifacts\\skripsi_graphs_20260706_122221",
+  "summary_final_path": "C:\\Users\\Vino\\Documents\\SKRIPSI\\artifacts\\latest_multiclass_training_summary.json",
+  "summary_baseline_path": "C:\\Users\\Vino\\Documents\\SKRIPSI\\artifacts\\operational_backup_before_2005plus_20260705_234502\\latest_multiclass_training_summary.json",
+  "figure_paths": {
+    "class_distribution": "C:\\Users\\Vino\\Documents\\SKRIPSI\\artifacts\\skripsi_graphs_20260706_122221\\01_distribusi_kelas_asli.png",
+    "smote_distribution": "C:\\Users\\Vino\\Documents\\SKRIPSI\\artifacts\\skripsi_graphs_20260706_122221\\02_distribusi_smote.png",
+    "monthly_pattern": "C:\\Users\\Vino\\Documents\\SKRIPSI\\artifacts\\skripsi_graphs_20260706_122221\\03_pola_musiman.png",
+    "confusion_matrix": "C:\\Users\\Vino\\Documents\\SKRIPSI\\artifacts\\skripsi_graphs_20260706_122221\\04_confusion_matrix_final.png",
+    "per_class_metrics": "C:\\Users\\Vino\\Documents\\SKRIPSI\\artifacts\\skripsi_graphs_20260706_122221\\05_metrics_per_kelas.png",
+    "family_comparison": "C:\\Users\\Vino\\Documents\\SKRIPSI\\artifacts\\skripsi_graphs_20260706_122221\\06_perbandingan_keluarga_model.png",
+    "window_comparison": "C:\\Users\\Vino\\Documents\\SKRIPSI\\artifacts\\skripsi_graphs_20260706_122221\\07_perbandingan_window.png",
+    "cutoff_sweep": "C:\\Users\\Vino\\Documents\\SKRIPSI\\artifacts\\skripsi_graphs_20260706_122221\\08_cutoff_sweep.png",
+    "time_steps_comparison": "C:\\Users\\Vino\\Documents\\SKRIPSI\\artifacts\\skripsi_graphs_20260706_122221\\09_time_steps_2005_ce.png",
+    "loss_comparison": "C:\\Users\\Vino\\Documents\\SKRIPSI\\artifacts\\skripsi_graphs_20260706_122221\\10_loss_compare_ts3.png",
+    "training_curve": "C:\\Users\\Vino\\Documents\\SKRIPSI\\artifacts\\skripsi_graphs_20260706_122221\\11_training_curve.png",
+    "sample_predictions": "C:\\Users\\Vino\\Documents\\SKRIPSI\\artifacts\\skripsi_graphs_20260706_122221\\12_contoh_actual_vs_predicted.png",
+    "latent_importance": "C:\\Users\\Vino\\Documents\\SKRIPSI\\artifacts\\skripsi_graphs_20260706_122221\\13_feature_importance_laten.png"
+  }
+}

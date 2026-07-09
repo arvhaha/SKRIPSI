@@ -1,0 +1,11 @@
+.git
+.agents
+.codex
+__pycache__
+*.ipynb
+*.png
+!logo hydrogis.png
+*.ps1
+*.bat
+artifacts/*
+!artifacts/latest_multiclass_training_summary.json

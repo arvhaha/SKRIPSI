@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WebGIS Prediksi Risiko Banjir Jakarta Timur</title>
+  <title>Prediksi Curah Hujan dan Risiko Banjir Jakarta Timur</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -11,51 +11,54 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
   <link rel="stylesheet" href="style.css">
 </head>
-<body id="top">
+<body id="top" class="public-home">
   <header class="site-header">
-    <div class="nav-inner nav-simple">
-      <a class="brand" href="#" aria-label="FloodGIS Home">
-        <span class="brand-icon">FG</span>
-        <span>
-          <strong>FloodGIS</strong>
-          <small>Jakarta Timur</small>
-        </span>
+    <div class="nav-inner nav-simple home-nav">
+      <a class="brand home-brand" href="#" aria-label="HydroGIS Jaktim Home">
+        <img
+          class="brand-logo"
+          src="logo hydrogis.png"
+          alt="HydroGIS Jaktim"
+          width="1600"
+          height="533"
+        >
       </a>
-
-      <a class="nav-signin" href="admin.html">Admin</a>
     </div>
   </header>
 
-  <main class="app-shell">
-    <header class="hero">
-      <div class="hero-copy">
-        <p class="eyebrow">Web-GIS Prediksi Risiko Banjir</p>
-        <h1>WebGIS Prediksi Risiko Banjir Jakarta Timur</h1>
-        <p class="hero-text">
-          Platform ini menampilkan informasi risiko banjir secara spasial dan interaktif
-          pada tingkat kecamatan. Visualisasi mengikuti rancangan proposal: peta tematik,
-          detail wilayah, serta simulasi output hybrid LSTM + XGBoost yang disiapkan
-          terpisah dari frontend.
-        </p>
+  <div id="environmentBanner" class="environment-banner" hidden></div>
 
-        <div class="article-lead">
-          <div class="lead-thumb">
-            <span>GIS</span>
-          </div>
-          <p>
-            Pengguna dapat memilih wilayah administratif tertentu, melihat indikator
-            curah hujan dan drainase, lalu membandingkan prioritas risiko melalui layer
-            peta tematik dan heatmap.
-          </p>
+  <main class="app-shell home-shell">
+    <section class="panel district-showcase" aria-labelledby="districtShowcaseTitle">
+      <div class="district-showcase-head">
+        <div>
+          <h2 id="districtShowcaseTitle">Ringkasan Kecamatan</h2>
+          <p>Geser kartu untuk melihat prediksi besok setiap kecamatan dan klik kartu untuk fokus ke wilayah tersebut.</p>
         </div>
       </div>
-    </header>
 
-    <section class="control-strip">
+      <div class="district-showcase-viewport">
+        <button id="districtCardsPrev" class="showcase-scroll-button is-left" type="button" aria-label="Geser kartu ke kiri">
+          <span aria-hidden="true">&lt;</span>
+        </button>
+
+        <div id="districtCardsTrack" class="district-cards-track" aria-live="polite">
+          <article class="showcase-empty-card">
+            Memuat ringkasan kecamatan...
+          </article>
+        </div>
+
+        <button id="districtCardsNext" class="showcase-scroll-button is-right" type="button" aria-label="Geser kartu ke kanan">
+          <span aria-hidden="true">&gt;</span>
+        </button>
+      </div>
+    </section>
+
+    <section class="control-strip compact-control-strip">
       <div class="panel controls-panel">
         <div class="panel-heading">
           <h2>Kontrol Wilayah</h2>
-          <p>Pilih kecamatan untuk melihat detail wilayah dan mengarahkan tampilan peta.</p>
+          <p>Pilih kecamatan untuk melihat detail informasi dan fokus peta.</p>
         </div>
 
         <div class="controls-row">
@@ -70,10 +73,10 @@
         </div>
 
         <div class="legend-inline" aria-label="Legenda tingkat risiko">
-          <span class="legend-chip low">Level 1 Hijau</span>
-          <span class="legend-chip medium">Level 2 Kuning</span>
-          <span class="legend-chip watch">Level 3 Oranye</span>
-          <span class="legend-chip high">Level 4 Merah</span>
+          <span class="legend-chip low">Level 1 Sangat Rendah</span>
+          <span class="legend-chip medium">Level 2 Ringan</span>
+          <span class="legend-chip watch">Level 3 Sedang</span>
+          <span class="legend-chip high">Level 4 Tinggi</span>
         </div>
       </div>
 
@@ -81,22 +84,22 @@
         <article class="stat-card">
           <span>Total Kecamatan</span>
           <strong id="statDistrictCount">-</strong>
-          <small>Wilayah administratif yang divisualisasikan</small>
+          <small>Wilayah yang ditampilkan di peta</small>
         </article>
         <article class="stat-card">
-          <span>Risiko Tinggi</span>
+          <span>Perlu Waspada</span>
           <strong id="statHighRiskCount">-</strong>
-          <small>Kecamatan dengan prioritas mitigasi</small>
+          <small>Kecamatan yang butuh perhatian lebih</small>
         </article>
         <article class="stat-card">
-          <span>Rata-Rata Curah Hujan</span>
+          <span>Rata-Rata Risiko</span>
           <strong id="statAverageRainfall">-</strong>
-          <small>Prediksi hujan sebagai indikator temporal</small>
+          <small>Gambaran umum kondisi Jakarta Timur</small>
         </article>
         <article class="stat-card">
-          <span>Pembaruan Data</span>
+          <span>Observasi Terakhir</span>
           <strong id="statUpdatedAt">-</strong>
-          <small id="statRefreshInterval">Menunggu metadata pembaruan</small>
+          <small id="statRefreshInterval">Menunggu informasi pembaruan data</small>
         </article>
       </div>
     </section>
@@ -105,24 +108,25 @@
       <div class="map-panel">
         <div class="map-panel-head">
           <div>
-            <h2>Peta Tematik Risiko Banjir</h2>
-            <p id="mapSubtitle">Memuat data risiko banjir per kecamatan Jakarta Timur.</p>
+            <h2>Peta Risiko Banjir</h2>
+            <p id="mapSubtitle">Memuat tingkat risiko per kecamatan di Jakarta Timur.</p>
           </div>
           <div class="status-pill" id="dataStatus">Memuat data</div>
         </div>
 
+        <div id="dataFreshnessNotice" class="data-freshness-banner" hidden></div>
         <div id="map"></div>
       </div>
 
       <aside class="side-panel">
         <section class="panel detail-panel">
           <div class="panel-heading">
-            <h2>Detail Wilayah</h2>
-            <p>Informasi detail ditampilkan ketika wilayah dipilih dari dropdown atau peta.</p>
+            <h2>Detail Kecamatan</h2>
+            <p>Informasi wilayah akan tampil setelah kecamatan dipilih.</p>
           </div>
           <div id="detailContent" class="detail-content">
             <div class="empty-state">
-              Data wilayah akan tampil di sini setelah peta berhasil dimuat.
+              Pilih kecamatan dari peta atau dropdown untuk melihat detail.
             </div>
           </div>
         </section>

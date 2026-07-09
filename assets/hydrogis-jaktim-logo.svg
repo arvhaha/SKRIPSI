@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 180" role="img" aria-labelledby="title desc">
+  <title id="title">HydroGIS Jaktim</title>
+  <desc id="desc">Logo HydroGIS Jaktim dengan ikon heksagon, gelombang air, dan penanda lokasi.</desc>
+  <defs>
+    <style>
+      .wordmark {
+        fill: #1784c8;
+        font: 800 74px "Plus Jakarta Sans", "Segoe UI", Arial, sans-serif;
+        letter-spacing: -0.04em;
+      }
+    </style>
+  </defs>
+  <g transform="translate(10 10)">
+    <path
+      d="M70 10L127 43V109L70 142L13 109V43Z"
+      fill="none"
+      stroke="#49b5eb"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      stroke-width="8"
+    />
+    <g fill="#b9e1f8" stroke="#1784c8" stroke-width="1.5">
+      <circle cx="70" cy="10" r="5.5" />
+      <circle cx="127" cy="43" r="5.5" />
+      <circle cx="127" cy="109" r="5.5" />
+      <circle cx="70" cy="142" r="5.5" />
+      <circle cx="13" cy="109" r="5.5" />
+      <circle cx="13" cy="43" r="5.5" />
+    </g>
+    <path
+      d="M13 82C31 62 49 58 67 69C84 80 103 95 127 82"
+      fill="none"
+      stroke="#1784c8"
+      stroke-linecap="round"
+      stroke-width="12"
+    />
+    <path
+      d="M13 97C31 81 50 76 69 88C88 101 107 116 127 101"
+      fill="none"
+      stroke="#1784c8"
+      stroke-linecap="round"
+      stroke-width="12"
+    />
+    <path
+      d="M70 44C61.163 44 54 51.163 54 60C54 73.5 70 88 70 88S86 73.5 86 60C86 51.163 78.837 44 70 44Z"
+      fill="#49b5eb"
+    />
+    <circle cx="70" cy="60" r="8" fill="#49b5eb" />
+  </g>
+  <text x="175" y="105" class="wordmark">HydroGIS Jaktim</text>
+</svg>

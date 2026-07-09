@@ -1,0 +1,55 @@
+{
+  "time_steps": 3,
+  "feature_columns": [
+    "Curah Hujan (mm)",
+    "Hujan_3Hari_Kumulatif",
+    "Hujan_7Hari_Kumulatif",
+    "Hujan_7Hari_Maksimum",
+    "Hujan_Lag_1",
+    "Hujan_Lag_2",
+    "Hujan_Lag_3",
+    "Hujan_Lag_7",
+    "HariHujan_Beruntun",
+    "Suhu Rata-rata (C)",
+    "Kelembapan Rata-rata (%)",
+    "Kecepatan Angin Max (km/h)",
+    "Bulan_Sin",
+    "Bulan_Cos",
+    "HariTahun_Sin",
+    "HariTahun_Cos",
+    "Kec_Cakung",
+    "Kec_Cipayung",
+    "Kec_Ciracas",
+    "Kec_Duren Sawit",
+    "Kec_Jatinegara",
+    "Kec_Kramat Jati",
+    "Kec_Makasar",
+    "Kec_Matraman",
+    "Kec_Pasar Rebo",
+    "Kec_Pulo Gadung"
+  ],
+  "training_window_start_date": "2005-01-01",
+  "loss_mode": "focal",
+  "ensemble_mode": "gated_lstm_xgb_override",
+  "ensemble_rule": {
+    "enabled": true,
+    "class_2_threshold": 0.6,
+    "class_3_threshold": 0.65,
+    "class_2_margin": 0.0,
+    "class_3_margin": 0.0,
+    "selection_score": 0.381957,
+    "description": "LSTM menjadi prediksi dasar. XGBoost hanya boleh override ke kelas 2 atau 3 saat probabilitas laten cukup kuat."
+  },
+  "decision_rule": {
+    "enabled": true,
+    "extreme_threshold": 0.65,
+    "extreme_margin": 0.0,
+    "description": "Alias backward-compatible untuk gate kelas 3 pada mode gated ensemble."
+  },
+  "model_notes": {
+    "split_strategy": "chronological_per_district",
+    "scaler_fit_scope": "train_only",
+    "smote_scope": "latent_features_partial_classes_2_and_3",
+    "ensemble_strategy": "lstm_base_with_xgb_selective_override"
+  }
+}

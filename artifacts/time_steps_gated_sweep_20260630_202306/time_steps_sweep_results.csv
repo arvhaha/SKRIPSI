@@ -1,0 +1,5 @@
+time_steps,summary_path,gated_accuracy,gated_macro_recall,gated_macro_f1,gated_critical_recall,gated_critical_precision,gated_critical_f1,lstm_accuracy,lstm_macro_f1,xgb_accuracy,xgb_macro_f1,best_xgb_name,class_2_threshold,class_3_threshold,class_2_margin,class_3_margin
+7,C:\Users\Vino\Documents\SKRIPSI\artifacts\time_steps_gated_sweep_20260630_202306\time_steps_7_summary.json,0.62035,0.340697,0.331152,0.0,0.0,0.0,0.62035,0.331152,0.53025,0.345593,XGB_1,1.0,1.0,0.0,0.0
+3,C:\Users\Vino\Documents\SKRIPSI\artifacts\time_steps_gated_sweep_20260630_202306\time_steps_3_summary.json,0.5965,0.400367,0.367309,0.195652,0.029126,0.050704,0.61835,0.34411,0.5378,0.355406,XGB_3,0.65,0.35,0.0,0.05
+10,C:\Users\Vino\Documents\SKRIPSI\artifacts\time_steps_gated_sweep_20260630_202306\time_steps_10_summary.json,0.59065,0.355993,0.358002,0.0,0.0,0.0,0.603,0.356227,0.5187,0.339318,XGB_1,0.65,0.4,0.0,0.0
+5,C:\Users\Vino\Documents\SKRIPSI\artifacts\latest_multiclass_training_summary.json,0.58335,0.370665,0.347611,0.130435,0.012295,0.022472,0.6131,0.320082,0.53305,0.348189,XGB_4,0.65,0.45,0.0,0.05
