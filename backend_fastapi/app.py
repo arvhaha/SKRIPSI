@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 from typing import Any, Dict, Optional, Union
 
@@ -48,6 +49,8 @@ app = FastAPI(
 )
 
 ROOT = Path(__file__).resolve().parent.parent
+BUNDLED_PUBLIC_PREDICTIONS_PATH = ROOT / "frontend-public" / "data" / "east-jakarta-predictions.json"
+TEMPLATE_PREDICTIONS_PATH = ROOT / "data" / "east-jakarta-template.json"
 
 allowed_origins = get_cors_origins()
 if allowed_origins:
@@ -131,8 +134,45 @@ def _serialize_admin_overrides_for_client() -> Dict[str, Dict[str, Any]]:
     }
 
 
+def _safe_load_json_file(path: Path) -> Optional[Dict[str, Any]]:
+    try:
+        if path.exists():
+            return json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+    return None
+
+
+def _build_minimal_admin_payload() -> Dict[str, Any]:
+    bundled_payload = _safe_load_json_file(BUNDLED_PUBLIC_PREDICTIONS_PATH)
+    if isinstance(bundled_payload, dict):
+        bundled_payload.setdefault("meta", {})
+        return bundled_payload
+
+    template_payload = _safe_load_json_file(TEMPLATE_PREDICTIONS_PATH)
+    if isinstance(template_payload, dict):
+        template_payload.setdefault("meta", {})
+        template_payload.setdefault("forecastDays", [])
+        template_payload.setdefault("districts", [])
+        return template_payload
+
+    return {
+        "meta": {
+            "appName": get_application_name(),
+            "adminPreviewMode": "minimal_fallback",
+            "publicPayloadSourceLabel": "Fallback minimal admin",
+        },
+        "forecastDays": [],
+        "districts": [],
+    }
+
+
 def _build_admin_snapshot_fallback_response(error: Exception) -> Dict[str, Any]:
-    payload = get_public_prediction_payload()
+    try:
+        payload = get_public_prediction_payload()
+    except Exception:
+        payload = _build_minimal_admin_payload()
+
     payload.setdefault("meta", {})
     payload["meta"]["adminPreviewMode"] = "public_snapshot_fallback"
     payload["meta"]["adminPreviewError"] = str(error)
@@ -145,11 +185,23 @@ def _build_admin_snapshot_fallback_response(error: Exception) -> Dict[str, Any]:
     except Exception:
         history_entries = []
 
+    try:
+        publication = get_publication_summary(payload)
+    except Exception:
+        publication = {
+            "hasPublishedSnapshot": False,
+            "publishedAt": payload.get("meta", {}).get("publishedAt"),
+            "payloadUpdatedAt": payload.get("meta", {}).get("updatedAt"),
+            "publishedDistrictCount": len(payload.get("districts", [])),
+            "sourceLabel": payload.get("meta", {}).get("publicPayloadSourceLabel") or "Fallback admin",
+            "generatedFromLiveAt": payload.get("meta", {}).get("updatedAt"),
+        }
+
     return {
         "status": "ok",
         "payload": payload,
         "overrides": _serialize_admin_overrides_for_client(),
-        "publication": get_publication_summary(payload),
+        "publication": publication,
         "history": history_entries,
     }
 
@@ -192,7 +244,28 @@ def get_admin_live_predictions() -> Dict[str, Any]:
     try:
         return get_admin_live_preview_payload()
     except Exception as error:  # pragma: no cover - deploy/runtime defensive fallback
-        return _build_admin_snapshot_fallback_response(error)
+        try:
+            return _build_admin_snapshot_fallback_response(error)
+        except Exception as fallback_error:  # pragma: no cover - last defensive branch
+            payload = _build_minimal_admin_payload()
+            payload.setdefault("meta", {})
+            payload["meta"]["adminPreviewMode"] = "minimal_fallback"
+            payload["meta"]["adminPreviewError"] = str(error)
+            payload["meta"]["adminPreviewFallbackError"] = str(fallback_error)
+            return {
+                "status": "ok",
+                "payload": payload,
+                "overrides": {},
+                "publication": {
+                    "hasPublishedSnapshot": False,
+                    "publishedAt": payload.get("meta", {}).get("publishedAt"),
+                    "payloadUpdatedAt": payload.get("meta", {}).get("updatedAt"),
+                    "publishedDistrictCount": len(payload.get("districts", [])),
+                    "sourceLabel": payload.get("meta", {}).get("publicPayloadSourceLabel") or "Fallback admin",
+                    "generatedFromLiveAt": payload.get("meta", {}).get("updatedAt"),
+                },
+                "history": [],
+            }
 
 
 @app.get("/api/admin/prediction-runs", dependencies=[Depends(enforce_admin_api_access)])
