@@ -8,22 +8,26 @@ Checklist aktivasi GitHub Actions + Railway yang lebih operasional ada di:
 
 ## Kenapa Railway
 
-- Paling cocok untuk project ini karena backend Python, frontend statis, dan file model ada dalam satu repo.
+- Paling cocok untuk project ini karena backend Python, scheduler, dan file model ada dalam satu repo.
 - Railway menyediakan domain publik dan HTTPS.
 - Railway bisa deploy langsung dari GitHub atau dari Dockerfile.
 
 ## File yang sudah disiapkan
 
 - `webgis_backend.py`
-  Sudah membaca `HOST` dan `PORT` dari environment.
+  Sekarang berfungsi sebagai thin wrapper server/CLI yang membaca `HOST` dan `PORT` dari environment.
+- `backend_core/legacy_core.py`
+  Menyimpan logika inti prediksi, admin override, publication snapshot, dan handler backend lama.
 - `requirements.txt`
   Berisi dependency inti backend.
 - `Dockerfile`
-  Supaya environment deploy lebih konsisten untuk TensorFlow + XGBoost.
+  Supaya environment deploy lebih konsisten untuk TensorFlow + XGBoost, sekaligus menyiapkan mount point `/app/data` untuk SQLite dan snapshot publik.
 - `.dockerignore`
   Mengurangi file yang tidak perlu saat build image.
 - `.github/workflows/daily-public-refresh.yml`
   Scheduler publik harian via GitHub Actions untuk update dataset dan prediksi.
+- `frontend-public/`
+  Paket frontend React hasil build untuk deploy ke Vercel/Netlify jika memakai mode split-hybrid.
 
 ## Langkah deploy
 
@@ -37,6 +41,9 @@ Checklist aktivasi GitHub Actions + Railway yang lebih operasional ada di:
 8. Klik `Generate Domain`.
 9. Railway akan memberikan URL publik seperti `https://namaservice.up.railway.app`.
 10. Isi juga `ADMIN_USERNAME` dan `ADMIN_PASSWORD` supaya halaman admin tidak terbuka bebas saat publish.
+11. Isi `FLOODGIS_DB_PATH=/app/data/floodgis.db`.
+12. Kalau frontend publik dipisah dari backend, isi juga `FRONTEND_ORIGIN` dengan domain frontend publik.
+13. Pastikan service Railway memakai persistent volume yang ter-mount ke `/app/data`.
 
 ## Hal penting
 
@@ -58,7 +65,20 @@ Checklist aktivasi GitHub Actions + Railway yang lebih operasional ada di:
 - Admin page: `/admin.html`
   - Di mode production, halaman ini perlu Basic Auth dan akan dinonaktifkan kalau credential admin belum diisi.
 - API health check: `/api/health`
+  - Cek field `serverTime`, `serverDate`, `sqliteDbPath`, `sqliteDbExists`, dan `publicSnapshotExists`.
 - API predictions: `/api/predictions`
+- API geojson: `/api/geojson`
+- API admin live draft: `/api/admin/predictions/live`
+- API admin publication: `/api/admin/publication`
+
+## Audit tanggal dan freshness
+
+Per Jumat, 24 Juli 2026, payload yang sehat harus masuk akal terhadap tanggal akses:
+
+- `latestObservationDate` tidak boleh berada di masa depan.
+- `forecastTargetDate` idealnya adalah `2026-07-25` bila backend sedang memprediksi besok dari data `2026-07-24`, atau `2026-07-24` bila payload memang ditujukan untuk hari ini.
+- Jika metadata atau histori run menunjukkan `2026-07-25` padahal pengecekan dilakukan pada Jumat, 24 Juli 2026, cek `serverTime` di `/api/health` untuk memastikan jam server tidak melompat ke masa depan.
+- Untuk smoke test deterministik, kamu bisa set sementara `FLOODGIS_FIXED_NOW=2026-07-24T12:00:00+07:00` lalu hapus lagi setelah validasi selesai.
 
 ## Scheduler Untuk Server Publik
 
@@ -85,4 +105,4 @@ Kalau mau tes manual tanpa menunggu jam cron, buka tab `Actions` di GitHub lalu 
 
 ## Catatan
 
-Arsitektur sekarang masih cocok untuk demo, skripsi, dan trafik ringan. Kalau nanti mau dipakai lebih serius, langkah berikutnya yang bagus adalah memindahkan server ini ke framework seperti FastAPI atau Flask + reverse proxy.
+Arsitektur sekarang masih cocok untuk demo, skripsi, dan trafik ringan. FastAPI di folder `backend_fastapi/` sudah memakai `backend_core/` sebagai service layer utama, sementara `webgis_backend.py` tinggal jadi wrapper tipis untuk kompatibilitas server lama dan export CLI.

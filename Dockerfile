@@ -16,6 +16,10 @@ RUN pip install --no-cache-dir --upgrade pip && \
 
 COPY . .
 
+RUN mkdir -p /app/data
+
+VOLUME ["/app/data"]
+
 EXPOSE 8000
 
-CMD ["python", "webgis_backend.py"]
+CMD ["python", "backend_fastapi/run.py"]

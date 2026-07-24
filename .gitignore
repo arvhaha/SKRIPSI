@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+tmp/
+artifacts/*.log
+artifacts/*_stdout*.log
+artifacts/*_stderr*.log
+artifacts/edge-headless-profile/
+artifacts/scheduler_logs/*.log
+data/floodgis.db
+backend_core/__pycache__/
+backend_core/services/__pycache__/
+backend_fastapi/__pycache__/

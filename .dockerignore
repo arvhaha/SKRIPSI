@@ -2,10 +2,16 @@
 .agents
 .codex
 __pycache__
+frontend-public
+tmp
 *.ipynb
 *.png
 !logo hydrogis.png
+!logo floodgis2.png
+!icons8-arrow-100.png
+!weather_icon\*.png
 *.ps1
 *.bat
 artifacts/*
 !artifacts/latest_multiclass_training_summary.json
+data/floodgis.db

@@ -14,6 +14,8 @@ File yang dipakai:
 - `refresh_public_predictions.py`
 - `update_openmeteo_dataset_jaktim.py`
 - `webgis_backend.py`
+- `backend_core/legacy_core.py`
+- `frontend-public/`
 - `DEPLOY_RAILWAY.md`
 - `STAGING_PRODUCTION_RAILWAY.md`
 
@@ -27,7 +29,7 @@ File yang dipakai:
   - `Master_Data_Spasial_Jaktim_1990_sekarang.csv`
   - `data/east-jakarta-predictions.json`
   - `data/jkt.geojson`
-  - `logo hydrogis.png`
+  - `frontend-public/`
 - Pastikan branch deploy sudah jelas.
   Rekomendasi paling simpel:
   - `main` untuk production
@@ -99,6 +101,7 @@ PORT=8000
 APP_ENV=production
 APP_ENV_LABEL=PRODUCTION
 APP_NAME=FloodGIS Jakarta Timur
+FRONTEND_ORIGIN=https://hydrogis-jaktim.vercel.app
 ADMIN_USERNAME=admin
 ADMIN_PASSWORD=ganti-password-kuat
 ```
@@ -111,6 +114,7 @@ PORT=8000
 APP_ENV=staging
 APP_ENV_LABEL=STAGING
 APP_NAME=FloodGIS Jakarta Timur
+FRONTEND_ORIGIN=https://hydrogis-jaktim-staging.vercel.app
 ADMIN_USERNAME=admin
 ADMIN_PASSWORD=ganti-password-kuat
 ```
@@ -119,8 +123,34 @@ Catatan:
 
 - Railway bisa mendeteksi dan menyarankan import variabel dari file `.env` contoh di root repo.
 - Kalau mau lebih rapi, shared variables bisa dipakai untuk nilai yang sama di beberapa service.
+- Jangan pakai password contoh seperti `admin123`, `secret123`, atau password yang sama dengan akun lain.
+- Untuk production, anggap `ADMIN_USERNAME` dan `ADMIN_PASSWORD` ini adalah pagar minimal agar `admin*.html` tidak terbuka bebas.
 
-## 7. Aktifkan Public Domain Railway
+## 7. Checklist Proteksi Admin Production
+
+Sebelum domain publik dibagikan, cek ini dulu:
+
+- `APP_ENV` benar-benar bernilai `production`.
+- `ADMIN_USERNAME` terisi.
+- `ADMIN_PASSWORD` terisi dan bukan password lemah/default.
+- Jangan publish screenshot, video, atau dokumen yang memperlihatkan credential admin.
+- Kalau admin memang tidak perlu dibuka ke publik saat demo, lebih aman cukup bagikan homepage publik saja.
+
+Perilaku yang diharapkan di production:
+
+- Jika `ADMIN_USERNAME` dan `ADMIN_PASSWORD` belum diisi, `admin.html` harus terkunci dan mengembalikan status tidak tersedia.
+- Jika credential diisi, `admin.html` harus meminta autentikasi sebelum halaman admin bisa dibuka.
+
+Tes cepat yang wajib:
+
+- buka `/admin.html` tanpa login
+- pastikan browser meminta auth atau halaman admin tidak langsung terbuka
+- coba login dengan credential yang benar
+- pastikan halaman admin baru terbuka setelah autentikasi
+
+Kalau hasilnya admin masih terbuka bebas tanpa auth, jangan lanjut publish dulu.
+
+## 8. Aktifkan Public Domain Railway
 
 - Buka service di Railway.
 - Masuk ke `Settings`.
@@ -135,7 +165,7 @@ Contoh endpoint yang perlu dites:
 - `/api/predictions`
 - `/admin.html`
 
-## 8. Tes Manual Workflow Sekali
+## 9. Tes Manual Workflow Sekali
 
 - Masuk ke tab `Actions` di GitHub.
 - Pilih workflow `Daily Public Prediction Refresh`.
@@ -149,7 +179,7 @@ Yang harus kamu lihat:
 - step export prediction JSON sukses
 - step commit berhasil, atau menulis `Tidak ada perubahan dataset/prediksi.`
 
-## 9. Verifikasi Setelah Workflow Jalan
+## 10. Verifikasi Setelah Workflow Jalan
 
 - Buka commit terbaru di GitHub.
 - Pastikan file yang berubah minimal:
@@ -167,7 +197,7 @@ Yang perlu kamu cek di web:
 - data freshness ikut update
 - admin page production minta auth atau terkunci sesuai env
 
-## 10. Verifikasi Jadwal Harian
+## 11. Verifikasi Jadwal Harian
 
 - Workflow sekarang dijadwalkan dengan cron:
 
@@ -178,7 +208,7 @@ Yang perlu kamu cek di web:
 - Itu setara dengan `04:00 WIB` pada timezone `UTC+7`.
 - Besok pagi, cek apakah ada run otomatis baru di tab `Actions`.
 
-## 11. Kalau Ada Error
+## 12. Kalau Ada Error
 
 Kalau gagal di GitHub Actions:
 
@@ -196,7 +226,7 @@ Kalau gagal di Railway:
 - cek build log, terutama load model TensorFlow/XGBoost
 - cek file model memang ikut ke repo/image deploy
 
-## 12. Urutan Paling Aman Buat Kamu
+## 13. Urutan Paling Aman Buat Kamu
 
 Kalau mau paling aman dan minim drama:
 
@@ -215,6 +245,9 @@ Kalau mau paling aman dan minim drama:
 - [ ] Railway service sudah connect ke repo yang benar
 - [ ] Branch autodeploy Railway sudah benar
 - [ ] Variables production/staging sudah diisi
+- [ ] `APP_ENV=production` sudah benar untuk service publik
+- [ ] `ADMIN_USERNAME` dan `ADMIN_PASSWORD` production sudah terpasang
+- [ ] `/admin.html` tidak terbuka bebas tanpa auth
 - [ ] Public domain Railway sudah digenerate
 - [ ] Run workflow manual sudah sukses
 - [ ] Commit otomatis dari workflow sudah masuk repo
