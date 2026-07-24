@@ -14,6 +14,7 @@ from backend_core.drainage_logic import (
 from backend_core.legacy_core import (
     ADMIN_USERNAME,
     PUBLIC_PAYLOAD_PATH,
+    ROOT,
     append_admin_history_entry,
     build_prediction_payload,
     current_jakarta_timestamp,
@@ -22,6 +23,39 @@ from backend_core.legacy_core import (
     serialize_payload,
 )
 from backend_core.sqlite_store import get_latest_publication_snapshot, insert_publication_snapshot
+
+BUNDLED_PUBLIC_PAYLOAD_PATH = ROOT / "frontend-public" / "data" / "east-jakarta-predictions.json"
+
+
+def _load_json_payload(path) -> dict[str, Any] | None:
+    try:
+        if path.exists():
+            return json.loads(path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return None
+    return None
+
+
+def _build_live_payload_with_snapshot_fallback() -> tuple[dict[str, Any], str]:
+    try:
+        payload = build_prediction_payload()
+        return payload, "live_model"
+    except Exception as error:  # pragma: no cover - defensive fallback for deploy/runtime mismatch
+        fallback_payload = _load_json_payload(BUNDLED_PUBLIC_PAYLOAD_PATH)
+        if fallback_payload is None:
+            raise error
+
+        fallback_payload.setdefault("meta", {})
+        fallback_payload["meta"]["liveBuildStatus"] = "bundled_snapshot_fallback"
+        fallback_payload["meta"]["liveBuildError"] = str(error)
+        fallback_payload["meta"]["publicPayloadSource"] = (
+            fallback_payload["meta"].get("publicPayloadSource") or "bundled_snapshot_fallback"
+        )
+        fallback_payload["meta"]["publicPayloadSourceLabel"] = (
+            fallback_payload["meta"].get("publicPayloadSourceLabel")
+            or "Snapshot bundel fallback"
+        )
+        return fallback_payload, "bundled_snapshot_fallback"
 
 
 def _enrich_runtime_meta(payload: dict[str, Any]) -> dict[str, Any]:
@@ -157,20 +191,28 @@ def load_public_prediction_payload() -> dict[str, Any]:
         except (json.JSONDecodeError, OSError):
             pass
 
-    payload = build_prediction_payload()
+    payload, fallback_mode = _build_live_payload_with_snapshot_fallback()
     payload.setdefault("meta", {})
-    payload["meta"]["publicPayloadSource"] = "live_fallback"
-    payload["meta"]["publicPayloadSourceLabel"] = "Fallback live backend"
+    if fallback_mode == "live_model":
+        payload["meta"]["publicPayloadSource"] = "live_fallback"
+        payload["meta"]["publicPayloadSourceLabel"] = "Fallback live backend"
+    else:
+        payload["meta"]["publicPayloadSource"] = "bundled_snapshot_fallback"
+        payload["meta"]["publicPayloadSourceLabel"] = "Fallback snapshot bundel"
     return _enrich_runtime_meta(payload)
 
 
 def build_admin_live_preview_response() -> dict[str, Any]:
-    live_payload = build_prediction_payload()
+    live_payload, preview_mode = _build_live_payload_with_snapshot_fallback()
     overrides_state = load_admin_overrides_state()
     apply_admin_overrides_to_payload(live_payload, overrides_state, load_drainage_profiles())
     live_payload.setdefault("meta", {})
-    live_payload["meta"]["adminPreviewMode"] = "live_draft"
-    live_payload["meta"]["publicPayloadSourceLabel"] = "Draft live admin"
+    live_payload["meta"]["adminPreviewMode"] = (
+        "live_draft" if preview_mode == "live_model" else "bundled_snapshot_draft"
+    )
+    live_payload["meta"]["publicPayloadSourceLabel"] = (
+        "Draft live admin" if preview_mode == "live_model" else "Draft snapshot bundel admin"
+    )
 
     overrides_for_client = {
         entry.get("districtName"): {
@@ -192,7 +234,7 @@ def build_admin_live_preview_response() -> dict[str, Any]:
 
 
 def publish_admin_snapshot() -> dict[str, Any]:
-    live_payload = build_prediction_payload()
+    live_payload, publish_mode = _build_live_payload_with_snapshot_fallback()
     overrides_state = load_admin_overrides_state()
     apply_admin_overrides_to_payload(live_payload, overrides_state, load_drainage_profiles())
     cleared_override_count = len(overrides_state.get("districts", {}))
@@ -200,8 +242,14 @@ def publish_admin_snapshot() -> dict[str, Any]:
     now = current_jakarta_timestamp().isoformat()
     live_payload["meta"]["publishedAt"] = now
     live_payload["meta"]["publishedBy"] = ADMIN_USERNAME or "Admin lokal"
-    live_payload["meta"]["publicPayloadSource"] = "admin_publish"
-    live_payload["meta"]["publicPayloadSourceLabel"] = "Dipublish dari panel admin"
+    live_payload["meta"]["publicPayloadSource"] = (
+        "admin_publish" if publish_mode == "live_model" else "admin_publish_bundled_snapshot"
+    )
+    live_payload["meta"]["publicPayloadSourceLabel"] = (
+        "Dipublish dari panel admin"
+        if publish_mode == "live_model"
+        else "Dipublish dari snapshot bundel admin"
+    )
     live_payload["meta"]["publishedOverrideResetCount"] = cleared_override_count
     live_payload["meta"]["adminOverrideCount"] = 0
     PUBLIC_PAYLOAD_PATH.write_bytes(serialize_payload(live_payload))
