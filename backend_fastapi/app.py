@@ -17,6 +17,8 @@ from backend_core.services.admin_service import (
     publish_public_snapshot,
     save_drainage_override,
 )
+from backend_core.legacy_core import load_admin_history_state
+from backend_core.drainage_logic import load_admin_overrides_state
 from backend_core.services.auth_service import (
     get_admin_access_state,
     is_same_origin_admin_referer,
@@ -112,6 +114,46 @@ def build_admin_html_response(authorization: Optional[str]) -> Union[FileRespons
     return FileResponse(ROOT / "admin.html")
 
 
+def _serialize_admin_overrides_for_client() -> Dict[str, Dict[str, Any]]:
+    try:
+        overrides_state = load_admin_overrides_state()
+    except Exception:
+        return {}
+
+    return {
+        entry.get("districtName"): {
+            "districtName": entry.get("districtName"),
+            "drainageCondition": entry.get("drainageCondition"),
+            "updatedAt": entry.get("updatedAt"),
+        }
+        for entry in overrides_state.get("districts", {}).values()
+        if entry.get("districtName")
+    }
+
+
+def _build_admin_snapshot_fallback_response(error: Exception) -> Dict[str, Any]:
+    payload = get_public_prediction_payload()
+    payload.setdefault("meta", {})
+    payload["meta"]["adminPreviewMode"] = "public_snapshot_fallback"
+    payload["meta"]["adminPreviewError"] = str(error)
+    payload["meta"]["publicPayloadSourceLabel"] = (
+        payload["meta"].get("publicPayloadSourceLabel") or "Snapshot publik fallback admin"
+    )
+
+    try:
+        history_entries = load_admin_history_state().get("entries", [])
+    except Exception:
+        history_entries = []
+
+    return {
+        "status": "ok",
+        "payload": payload,
+        "overrides": _serialize_admin_overrides_for_client(),
+        "publication": get_publication_summary(payload),
+        "history": history_entries,
+    }
+
+
 @app.exception_handler(HTTPException)
 async def http_exception_handler(_: Any, exc: HTTPException) -> JSONResponse:
     return JSONResponse(
@@ -147,7 +189,10 @@ def get_admin_publication_state() -> PublicationStateResponse:
 
 @app.get("/api/admin/predictions/live", dependencies=[Depends(enforce_admin_api_access)])
 def get_admin_live_predictions() -> Dict[str, Any]:
-    return get_admin_live_preview_payload()
+    try:
+        return get_admin_live_preview_payload()
+    except Exception as error:  # pragma: no cover - deploy/runtime defensive fallback
+        return _build_admin_snapshot_fallback_response(error)
 
 
 @app.get("/api/admin/prediction-runs", dependencies=[Depends(enforce_admin_api_access)])
