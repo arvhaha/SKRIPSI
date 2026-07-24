@@ -210,7 +210,7 @@ class FloodGISRequestHandler(SimpleHTTPRequestHandler):
             return False
 
         self.send_response(HTTPStatus.UNAUTHORIZED)
-        self.send_header("WWW-Authenticate", 'Basic realm="FloodGIS Admin API"')
+        self.send_header("WWW-Authenticate", 'Basic realm="FloodGIS Admin"')
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Cache-Control", "no-store")
         body = serialize_payload(

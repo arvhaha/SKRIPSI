@@ -78,7 +78,7 @@ def enforce_admin_api_access(authorization: Optional[str] = Header(default=None)
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Autentikasi admin diperlukan untuk mengakses API admin.",
-        headers={"WWW-Authenticate": 'Basic realm="FloodGIS Admin API"'},
+        headers={"WWW-Authenticate": 'Basic realm="FloodGIS Admin"'},
     )
 
 
