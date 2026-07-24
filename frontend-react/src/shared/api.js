@@ -41,7 +41,7 @@ export function buildPredictionEndpoints() {
   if (configuredApiBaseUrl) {
     liveCandidates.push(`${configuredApiBaseUrl}/api/predictions`);
   } else {
-    liveCandidates.push('api/predictions');
+    liveCandidates.push('/api/predictions');
   }
 
   if (hostName === 'localhost' || hostName === '127.0.0.1') {
@@ -64,9 +64,6 @@ export function buildPredictionEndpoints() {
     if (hostName !== '127.0.0.1') {
       liveCandidates.push(`${protocol}//127.0.0.1:8000/api/predictions`);
     }
-  } else if (!configuredApiBaseUrl) {
-    liveCandidates.push(`${protocol}//${hostName}:8011/api/predictions`);
-    liveCandidates.push(`${protocol}//${hostName}:8000/api/predictions`);
   }
 
   return [...new Set(liveCandidates)];
@@ -80,6 +77,8 @@ export function buildGeoJsonEndpoints() {
 
   if (configuredApiBaseUrl) {
     candidates.push(`${configuredApiBaseUrl}/api/geojson`);
+  } else {
+    candidates.push('/api/geojson');
   }
 
   if (hostName === 'localhost' || hostName === '127.0.0.1') {
@@ -102,9 +101,6 @@ export function buildGeoJsonEndpoints() {
     if (hostName !== '127.0.0.1') {
       candidates.push(`${protocol}//127.0.0.1:8000/api/geojson`);
     }
-  } else if (!configuredApiBaseUrl) {
-    candidates.push(`${protocol}//${hostName}:8011/api/geojson`);
-    candidates.push(`${protocol}//${hostName}:8000/api/geojson`);
   }
 
   candidates.push('data/jkt.geojson');
@@ -120,7 +116,7 @@ export function buildAdminPreviewEndpoints() {
   if (configuredApiBaseUrl) {
     candidates.push(`${configuredApiBaseUrl}/api/admin/predictions/live`);
   } else {
-    candidates.push('api/admin/predictions/live');
+    candidates.push('/api/admin/predictions/live');
   }
 
   if (hostName === 'localhost' || hostName === '127.0.0.1') {
@@ -143,9 +139,6 @@ export function buildAdminPreviewEndpoints() {
     if (hostName !== '127.0.0.1') {
       candidates.push(`${protocol}//127.0.0.1:8000/api/admin/predictions/live`);
     }
-  } else if (!configuredApiBaseUrl) {
-    candidates.push(`${protocol}//${hostName}:8011/api/admin/predictions/live`);
-    candidates.push(`${protocol}//${hostName}:8000/api/admin/predictions/live`);
   }
 
   return [...new Set(candidates)];
