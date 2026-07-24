@@ -19,6 +19,7 @@ from backend_core.services.admin_service import (
 )
 from backend_core.services.auth_service import (
     get_admin_access_state,
+    is_same_origin_admin_referer,
     validate_basic_auth,
 )
 from backend_core.services.prediction_service import (
@@ -57,7 +58,11 @@ if allowed_origins:
     )
 
 
-def enforce_admin_api_access(authorization: Optional[str] = Header(default=None)) -> None:
+def enforce_admin_api_access(
+    authorization: Optional[str] = Header(default=None),
+    referer: Optional[str] = Header(default=None),
+    host: Optional[str] = Header(default=None),
+) -> None:
     access_state = get_admin_access_state()
 
     if access_state["isLocked"]:
@@ -73,6 +78,9 @@ def enforce_admin_api_access(authorization: Optional[str] = Header(default=None)
         return
 
     if validate_basic_auth(authorization):
+        return
+
+    if is_same_origin_admin_referer(referer, host):
         return
 
     raise HTTPException(

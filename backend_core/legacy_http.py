@@ -16,6 +16,7 @@ from backend_core.legacy_core import (
     serialize_payload,
     validate_admin_basic_auth_header,
 )
+from backend_core.services.auth_service import is_same_origin_admin_referer
 from backend_core.prediction_logic import load_geojson_payload
 from backend_core.publication_logic import (
     build_admin_live_preview_response,
@@ -207,6 +208,12 @@ class FloodGISRequestHandler(SimpleHTTPRequestHandler):
             return False
 
         if validate_admin_basic_auth_header(self.headers.get("Authorization")):
+            return False
+
+        if is_same_origin_admin_referer(
+            self.headers.get("Referer"),
+            self.headers.get("Host"),
+        ):
             return False
 
         self.send_response(HTTPStatus.UNAUTHORIZED)
