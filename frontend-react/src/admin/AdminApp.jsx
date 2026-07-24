@@ -24,6 +24,7 @@ import {
   buildAdminPredictionRunHistoryUrl,
   buildAdminPreviewEndpoints,
   buildApiUrl,
+  buildPredictionEndpoints,
   fetchJson,
   fetchFirstAvailable,
   getConfiguredApiBaseUrl,
@@ -38,6 +39,23 @@ function normalizeAdminPreviewResponse(responsePayload) {
     publication: responsePayload?.publication || null,
     history: Array.isArray(responsePayload?.history) ? responsePayload.history : []
   };
+}
+
+function buildAdminPreviewCandidates() {
+  return [
+    ...buildAdminPreviewEndpoints().map(url => ({ url })),
+    ...buildPredictionEndpoints().map(url => ({
+      url,
+      sourceUrl: `${url}#public-fallback`,
+      load: async () => ({
+        status: 'ok',
+        payload: await fetchJson(url),
+        overrides: {},
+        publication: null,
+        history: []
+      })
+    }))
+  ];
 }
 
 function isLiveBackendSource(sourceUrl) {
@@ -248,7 +266,7 @@ export default function AdminApp() {
 
     try {
       const { payload: rawResponse, sourceUrl: nextSourceUrl } = await fetchFirstAvailable(
-        buildAdminPreviewEndpoints().map(url => ({ url })),
+        buildAdminPreviewCandidates(),
         'Tidak ada sumber data prediksi yang berhasil dimuat.'
       );
       const response = normalizeAdminPreviewResponse(rawResponse);
