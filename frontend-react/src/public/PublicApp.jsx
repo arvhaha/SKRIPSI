@@ -714,8 +714,8 @@ export default function PublicApp() {
       <footer className="site-footer">
         <div className="footer-inner">
           <div className="footer-bottom">
-            <p className="footer-copy">&copy; 2026 - Badan Meteorologi, Klimatologi, dan Geofisika</p>
-            <a className="back-to-top" href="#top">Kembali ke atas</a>
+            <p className="footer-copy">&copy; 2026 FloodGIS Jakarta Timur</p>
+            <a className="back-to-top" href="#top" aria-label="Kembali ke atas" title="Kembali ke atas" />
           </div>
         </div>
       </footer>
