@@ -13,12 +13,16 @@ from backend_core.drainage_logic import (
 )
 from backend_core.legacy_core import (
     ADMIN_USERNAME,
+    APP_ENV,
+    APP_ENV_LABEL,
+    APP_NAME,
     PUBLIC_PAYLOAD_PATH,
     ROOT,
     append_admin_history_entry,
     build_prediction_payload,
     current_jakarta_timestamp,
     insert_prediction_run,
+    is_staging_environment,
     parse_optional_timestamp,
     serialize_payload,
 )
@@ -62,6 +66,13 @@ def _enrich_runtime_meta(payload: dict[str, Any]) -> dict[str, Any]:
     payload.setdefault("meta", {})
     meta = payload["meta"]
     now = current_jakarta_timestamp()
+
+    # Runtime environment should reflect the active server, even when the
+    # payload came from a bundled fallback snapshot generated elsewhere.
+    meta["appName"] = meta.get("appName") or APP_NAME
+    meta["deploymentEnvironment"] = APP_ENV
+    meta["deploymentEnvironmentLabel"] = APP_ENV_LABEL
+    meta["isStaging"] = is_staging_environment()
 
     if not meta.get("serverGeneratedAt"):
         meta["serverGeneratedAt"] = str(meta.get("updatedAt") or now.isoformat())

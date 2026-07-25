@@ -32,6 +32,8 @@ import {
   postJson
 } from '../shared/api';
 
+const ADMIN_FRONTEND_VERSION = '2026-07-25-railway-sync-1';
+
 function normalizeAdminPreviewResponse(responsePayload) {
   return {
     payload: responsePayload?.payload || responsePayload,
@@ -243,6 +245,7 @@ export default function AdminApp() {
 
   useEffect(() => {
     document.body.className = 'admin-dashboard-page';
+    console.info(`FloodGIS admin bundle ${ADMIN_FRONTEND_VERSION}`);
   }, []);
 
   useEffect(() => {
@@ -456,7 +459,7 @@ export default function AdminApp() {
             <div className="admin-topbar-copy">
               <p className="eyebrow">Panel Admin</p>
               <h1>FloodGIS Jakarta Timur</h1>
-              <p className="hero-text">Frontend React untuk review internal, override drainase publik, dan publish snapshot hasil ke homepage.</p>
+              <p className="hero-text">Panel review internal untuk cek draft backend, override drainase publik, dan publish snapshot hasil ke homepage.</p>
             </div>
 
             <div className="admin-toolbar-actions admin-topbar-actions">
@@ -509,7 +512,7 @@ export default function AdminApp() {
               <article className="kpi-card">
                 <span>Total Kecamatan</span>
                 <strong>{payload ? String(districts.length) : '-'}</strong>
-                <small>Wilayah yang sedang dipantau di WebGIS.</small>
+                <small>{payload ? `${districts.length} wilayah termuat di draft admin aktif.` : 'Wilayah yang sedang dipantau di WebGIS.'}</small>
               </article>
               <article className="kpi-card">
                 <span>Risiko Tertinggi</span>
