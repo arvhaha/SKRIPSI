@@ -402,6 +402,20 @@ export default function AdminApp() {
     }
   };
 
+  const handleRefreshModel = async () => {
+    setBusy(true);
+    setMessage({ text: 'Mengupdate sumber data dan membangun ulang payload backend...', tone: '' });
+
+    try {
+      const response = await postJson(buildApiUrl('api/admin/refresh'), {});
+      await loadPayload(response.message || 'Draft admin berhasil direfresh dari backend.');
+    } catch (error) {
+      console.error('Gagal refresh sumber data backend:', error);
+      setMessage({ text: error.message || 'Refresh sumber data backend gagal dijalankan.', tone: 'error' });
+      setBusy(false);
+    }
+  };
+
   const handleExportJson = () => {
     if (!payload) {
       setMessage({ text: 'Belum ada data yang bisa diexport.', tone: 'error' });
@@ -464,7 +478,7 @@ export default function AdminApp() {
 
             <div className="admin-toolbar-actions admin-topbar-actions">
               <a className="admin-link-button button-secondary" href={publicMapUrl}>Buka Peta Publik</a>
-              <button id="refreshDataButton" type="button" onClick={() => loadPayload('Draft admin berhasil diperbarui dari backend.')} disabled={busy}>Refresh Data Model</button>
+              <button id="refreshDataButton" type="button" onClick={handleRefreshModel} disabled={busy}>Refresh Sumber + Model</button>
               <button id="exportJsonButton" className="button-secondary" type="button" onClick={handleExportJson} disabled={busy}>Export JSON</button>
             </div>
           </header>

@@ -18,6 +18,21 @@ import pandas as pd
 
 os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")
 
+from backend_core.path_config import (
+    ADMIN_HISTORY_PATH,
+    ADMIN_OVERRIDES_PATH,
+    APP_ENV,
+    APP_ENV_LABEL,
+    APP_NAME,
+    DATASET_PATH,
+    DATA_DIR,
+    DISTRICT_GEOJSON_PATH,
+    DRAINAGE_PATH,
+    PUBLIC_PAYLOAD_PATH,
+    ROOT,
+    TEMPLATE_PAYLOAD_PATH,
+)
+from backend_core.services.data_bootstrap_service import ensure_runtime_data_files
 from tensorflow.keras.models import Model, load_model
 from backend_core.sqlite_store import (
     append_admin_history_entry as sqlite_append_admin_history_entry,
@@ -31,16 +46,6 @@ from backend_core.sqlite_store import (
     replace_admin_overrides_state,
 )
 
-
-ROOT = Path(__file__).resolve().parent.parent
-DATA_DIR = ROOT / "data"
-DATASET_PATH = ROOT / "Master_Data_Spasial_Jaktim_1990_sekarang.csv"
-PUBLIC_PAYLOAD_PATH = DATA_DIR / "east-jakarta-predictions.json"
-TEMPLATE_PAYLOAD_PATH = DATA_DIR / "east-jakarta-template.json"
-DISTRICT_GEOJSON_PATH = DATA_DIR / "jkt.geojson"
-DRAINAGE_PATH = DATA_DIR / "drainase_jaktim_template_backend.csv"
-ADMIN_OVERRIDES_PATH = DATA_DIR / "admin_overrides.json"
-ADMIN_HISTORY_PATH = DATA_DIR / "admin_activity_history.json"
 SQLITE_DB_PATH = get_sqlite_db_path()
 MODEL_PATH = ROOT / "model_bilstm_4class_jaktim.h5"
 XGB_PATH = ROOT / "model_xgboost_4class_jaktim.pkl"
@@ -59,9 +64,6 @@ CLASS_LABELS = [
 ]
 CLASS_RANGE_LABELS = ["<5 mm", "5-20 mm", "20-50 mm", ">=50 mm"]
 CLASS_SEVERITY_SCORES = [0.05, 0.35, 0.65, 0.95]
-APP_NAME = os.getenv("APP_NAME", "FloodGIS Jakarta Timur").strip() or "FloodGIS Jakarta Timur"
-APP_ENV = os.getenv("APP_ENV", "local").strip().lower() or "local"
-APP_ENV_LABEL = os.getenv("APP_ENV_LABEL", APP_ENV.upper()).strip() or APP_ENV.upper()
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "").strip()
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "").strip()
 FRONTEND_ORIGIN = os.getenv("FRONTEND_ORIGIN", "").strip()
@@ -81,6 +83,8 @@ CORS_ALLOWED_ORIGINS = tuple(
     )
     if origin
 )
+
+ensure_runtime_data_files()
 
 
 @dataclass(frozen=True)

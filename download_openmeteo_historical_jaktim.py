@@ -12,15 +12,15 @@ from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 import pandas as pd
+from backend_core.path_config import DATASET_PATH
 
 try:
     import certifi
 except ImportError:  # pragma: no cover - optional dependency fallback
     certifi = None
 
-
 ROOT = Path(__file__).resolve().parent
-DEFAULT_OUTPUT = ROOT / "Master_Data_Spasial_Jaktim_1990_sekarang.csv"
+DEFAULT_OUTPUT = DATASET_PATH
 API_URL = "https://archive-api.open-meteo.com/v1/archive"
 DAILY_FIELDS = [
     "precipitation_sum",

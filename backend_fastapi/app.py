@@ -35,6 +35,7 @@ from backend_core.services.prediction_history_service import (
     get_prediction_run_history,
 )
 from backend_core.services.publication_service import get_publication_summary
+from backend_core.services.refresh_service import refresh_live_prediction_sources
 from backend_core.services.runtime_service import (
     get_application_name,
     get_cors_origins,
@@ -304,6 +305,26 @@ def save_admin_override(payload: AdminOverrideRequest) -> AdminOverrideResponse:
         ) from error
 
     return AdminOverrideResponse(**result)
+
+
+@app.post(
+    "/api/admin/refresh",
+    response_model=GenericStatusResponse,
+    dependencies=[Depends(enforce_admin_api_access)],
+)
+def refresh_admin_predictions() -> GenericStatusResponse:
+    try:
+        result = refresh_live_prediction_sources()
+    except Exception as error:  # pragma: no cover - defensive response
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Refresh sumber data backend gagal dijalankan. {error}",
+        ) from error
+
+    return GenericStatusResponse(
+        status=result.get("status", "ok"),
+        message=result.get("message", "Refresh backend selesai dijalankan."),
+    )
 
 
 @app.post(

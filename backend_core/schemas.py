@@ -15,6 +15,12 @@ class HealthResponse(BaseModel):
     sqliteDbDirectoryWritableHint: Optional[bool] = None
     publicSnapshotPath: Optional[str] = None
     publicSnapshotExists: Optional[bool] = None
+    datasetPath: Optional[str] = None
+    datasetExists: Optional[bool] = None
+    drainagePath: Optional[str] = None
+    drainageExists: Optional[bool] = None
+    templatePath: Optional[str] = None
+    templateExists: Optional[bool] = None
     adminOverrideFilePath: Optional[str] = None
     adminApiProtected: Optional[bool] = None
     corsOrigins: Optional[list[str]] = None
