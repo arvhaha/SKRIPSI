@@ -217,6 +217,7 @@ def build_admin_live_preview_response() -> dict[str, Any]:
     live_payload, preview_mode = _build_live_payload_with_snapshot_fallback()
     overrides_state = load_admin_overrides_state()
     apply_admin_overrides_to_payload(live_payload, overrides_state, load_drainage_profiles())
+    live_payload = _enrich_runtime_meta(live_payload)
     live_payload.setdefault("meta", {})
     live_payload["meta"]["adminPreviewMode"] = (
         "live_draft" if preview_mode == "live_model" else "bundled_snapshot_draft"
@@ -248,6 +249,7 @@ def publish_admin_snapshot() -> dict[str, Any]:
     live_payload, publish_mode = _build_live_payload_with_snapshot_fallback()
     overrides_state = load_admin_overrides_state()
     apply_admin_overrides_to_payload(live_payload, overrides_state, load_drainage_profiles())
+    live_payload = _enrich_runtime_meta(live_payload)
     cleared_override_count = len(overrides_state.get("districts", {}))
     live_payload.setdefault("meta", {})
     now = current_jakarta_timestamp().isoformat()
