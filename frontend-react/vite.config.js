@@ -20,6 +20,16 @@ export default defineConfig({
       input: {
         main: path.resolve(__dirname, 'index.html'),
         admin: path.resolve(__dirname, 'admin.html')
+      },
+      output: {
+        entryFileNames: 'react-assets/[name].js',
+        chunkFileNames: 'react-assets/[name].js',
+        assetFileNames: assetInfo => {
+          const assetName = assetInfo.name ?? 'asset';
+          const extension = path.extname(assetName);
+          const baseName = path.basename(assetName, extension);
+          return `react-assets/${baseName}${extension}`;
+        }
       }
     }
   }
