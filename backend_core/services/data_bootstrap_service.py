@@ -5,6 +5,8 @@ import shutil
 from pathlib import Path
 from typing import Any
 
+import pandas as pd
+
 from backend_core.path_config import (
     ADMIN_HISTORY_PATH,
     ADMIN_OVERRIDES_PATH,
@@ -30,6 +32,33 @@ from backend_core.path_config import (
 def _copy_if_missing(source_path: Path, target_path: Path) -> None:
     if target_path.exists() or not source_path.exists():
         return
+    target_path.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(source_path, target_path)
+
+
+def _get_latest_dataset_date(path: Path) -> pd.Timestamp | None:
+    if not path.exists():
+        return None
+
+    try:
+        dataset = pd.read_csv(path, sep=";", usecols=["Tanggal"])
+        if dataset.empty:
+            return None
+        return pd.to_datetime(dataset["Tanggal"], format="%d/%m/%Y", dayfirst=True).max()
+    except Exception:
+        return None
+
+
+def _copy_dataset_if_source_newer(source_path: Path, target_path: Path) -> None:
+    if not source_path.exists():
+        return
+
+    source_latest = _get_latest_dataset_date(source_path)
+    target_latest = _get_latest_dataset_date(target_path)
+
+    if target_latest is not None and source_latest is not None and target_latest >= source_latest:
+        return
+
     target_path.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(source_path, target_path)
 
@@ -86,7 +115,7 @@ def ensure_runtime_data_files() -> None:
 
     # Static sources needed to build live predictions on Railway should live in
     # the writable runtime directory so refresh/publish use one consistent set.
-    _copy_if_missing(BUNDLED_DATASET_PATH, DATASET_PATH)
+    _copy_dataset_if_source_newer(BUNDLED_DATASET_PATH, DATASET_PATH)
     _copy_if_missing(BUNDLED_DRAINAGE_TEMPLATE_PATH, DRAINAGE_PATH)
     _copy_if_missing(BUNDLED_TEMPLATE_PAYLOAD_PATH, TEMPLATE_PAYLOAD_PATH)
     _copy_if_missing(BUNDLED_DISTRICT_GEOJSON_PATH, DISTRICT_GEOJSON_PATH)
