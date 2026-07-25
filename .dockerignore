@@ -3,6 +3,10 @@
 .codex
 __pycache__
 frontend-public
+!frontend-public/
+!frontend-public/data/
+!frontend-public/data/*.json
+!frontend-public/data/*.geojson
 tmp
 *.ipynb
 *.png
@@ -12,6 +16,8 @@ tmp
 !weather_icon\*.png
 *.ps1
 *.bat
+frontend-react/node_modules
+frontend-react/dist
 artifacts/*
 !artifacts/latest_multiclass_training_summary.json
 data/floodgis.db
