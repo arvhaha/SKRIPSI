@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import ssl
 import time
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Any
 from urllib.error import HTTPError, URLError
@@ -22,6 +23,9 @@ except ImportError:  # pragma: no cover - optional dependency fallback
 ROOT = Path(__file__).resolve().parent
 DEFAULT_OUTPUT = DATASET_PATH
 API_URL = "https://archive-api.open-meteo.com/v1/archive"
+END_DATE_RANGE_PATTERN = re.compile(
+    r"Parameter 'end_date' is out of allowed range from \d{4}-\d{2}-\d{2} to (\d{4}-\d{2}-\d{2})"
+)
 DAILY_FIELDS = [
     "precipitation_sum",
     "temperature_2m_mean",
@@ -61,8 +65,11 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--end-date",
-        default=date.today().isoformat(),
-        help=f"Tanggal akhir dalam format YYYY-MM-DD. Default: {date.today().isoformat()}",
+        default=get_archive_safe_end_date(),
+        help=(
+            "Tanggal akhir dalam format YYYY-MM-DD. "
+            f"Default aman archive: {get_archive_safe_end_date()}"
+        ),
     )
     parser.add_argument(
         "--output",
@@ -112,6 +119,26 @@ def validate_date(value: str) -> str:
     except ValueError as exc:
         raise ValueError(f"Tanggal '{value}' harus format YYYY-MM-DD.") from exc
     return value
+
+
+def get_archive_safe_end_date(today: date | None = None) -> str:
+    current_date = today or date.today()
+    return (current_date - timedelta(days=1)).isoformat()
+
+
+def clamp_archive_end_date(end_date: str, today: date | None = None) -> tuple[str, bool]:
+    validated_end_date = validate_date(end_date)
+    latest_safe_end_date = get_archive_safe_end_date(today=today)
+    if validated_end_date > latest_safe_end_date:
+        return latest_safe_end_date, True
+    return validated_end_date, False
+
+
+def extract_archive_max_end_date(error_detail: str) -> str | None:
+    match = END_DATE_RANGE_PATTERN.search(error_detail)
+    if match:
+        return match.group(1)
+    return None
 
 
 def build_url(
@@ -171,6 +198,13 @@ def fetch_json(
                 time.sleep(wait_seconds)
                 continue
             detail = exc.read().decode("utf-8", errors="ignore")
+            max_end_date = extract_archive_max_end_date(detail)
+            if max_end_date:
+                raise RuntimeError(
+                    "Open-Meteo archive belum menyediakan tanggal yang diminta. "
+                    f"Tanggal maksimum yang diizinkan saat ini: {max_end_date}.\n"
+                    f"URL: {url}\nDetail: {detail}"
+                ) from exc
             raise RuntimeError(
                 f"HTTP {exc.code} saat memanggil Open-Meteo.\nURL: {url}\nDetail: {detail}"
             ) from exc
@@ -261,7 +295,7 @@ def download_all_districts(args: argparse.Namespace) -> pd.DataFrame:
 def main() -> None:
     args = parse_args()
     args.start_date = validate_date(args.start_date)
-    args.end_date = validate_date(args.end_date)
+    args.end_date, end_date_was_clamped = clamp_archive_end_date(args.end_date)
 
     if args.start_date > args.end_date:
         raise ValueError("Tanggal awal tidak boleh lebih besar dari tanggal akhir.")
@@ -271,6 +305,11 @@ def main() -> None:
 
     print("Mulai unduh data Open-Meteo untuk 10 kecamatan Jakarta Timur...")
     print(f"Periode: {args.start_date} s.d. {args.end_date}")
+    if end_date_was_clamped:
+        print(
+            "[INFO] Tanggal akhir otomatis dimundurkan ke tanggal aman archive "
+            f"({args.end_date}) karena data hari ini belum tentu tersedia."
+        )
     if args.model.strip():
         print(f"Model API: {args.model.strip()}")
 

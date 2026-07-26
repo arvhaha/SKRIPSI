@@ -12,7 +12,9 @@ from download_openmeteo_historical_jaktim import (
     DISTRICT_COORDS,
     build_dataframe,
     build_url,
+    clamp_archive_end_date,
     fetch_json,
+    get_archive_safe_end_date,
     validate_date,
 )
 
@@ -50,8 +52,11 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--end-date",
-        default=date.today().isoformat(),
-        help=f"Tanggal akhir update format YYYY-MM-DD. Default: {date.today().isoformat()}",
+        default=get_archive_safe_end_date(),
+        help=(
+            "Tanggal akhir update format YYYY-MM-DD. "
+            f"Default aman archive: {get_archive_safe_end_date()}"
+        ),
     )
     parser.add_argument(
         "--backfill-days",
@@ -178,7 +183,8 @@ def merge_datasets(existing_dataset: pd.DataFrame, incremental_dataset: pd.DataF
 
 def main() -> None:
     args = parse_args()
-    args.end_date = validate_date(args.end_date)
+    requested_end_date = validate_date(args.end_date)
+    args.end_date, end_date_was_clamped = clamp_archive_end_date(requested_end_date)
 
     dataset_path = Path(args.dataset_path).resolve()
     dataset_path.parent.mkdir(parents=True, exist_ok=True)
@@ -193,6 +199,12 @@ def main() -> None:
 
     print(f"[INFO] Dataset target: {dataset_path}")
     print(f"[INFO] Periode update incremental: {start_date} s.d. {args.end_date}")
+    if end_date_was_clamped:
+        print(
+            "[INFO] Tanggal akhir update otomatis dimundurkan dari "
+            f"{requested_end_date} ke {args.end_date} karena archive Open-Meteo "
+            "belum tentu menyediakan data hari ini."
+        )
 
     incremental_dataset = download_incremental_dataset(args, start_date, args.end_date)
     merged_dataset = merge_datasets(existing_dataset, incremental_dataset)
