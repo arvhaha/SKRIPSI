@@ -388,27 +388,13 @@ export default function AdminApp() {
     }
   };
 
-  const handlePublish = async () => {
-    setBusy(true);
-    setMessage({ text: 'Mempublish snapshot ke halaman publik...', tone: '' });
-
-    try {
-      const response = await postJson(buildApiUrl('api/admin/publish'), {});
-      await loadPayload(response.message || 'Snapshot publik berhasil diperbarui dari panel admin.');
-    } catch (error) {
-      console.error('Gagal publish snapshot publik:', error);
-      setMessage({ text: error.message || 'Snapshot publik gagal dipublish.', tone: 'error' });
-      setBusy(false);
-    }
-  };
-
   const handleRefreshModel = async () => {
     setBusy(true);
-    setMessage({ text: 'Mengupdate sumber data dan membangun ulang payload backend...', tone: '' });
+    setMessage({ text: 'Mengupdate sumber data dan membangun ulang payload publik otomatis...', tone: '' });
 
     try {
       const response = await postJson(buildApiUrl('api/admin/refresh'), {});
-      await loadPayload(response.message || 'Draft admin berhasil direfresh dari backend.');
+      await loadPayload(response.message || 'Draft admin dan homepage berhasil direfresh otomatis dari backend.');
     } catch (error) {
       console.error('Gagal refresh sumber data backend:', error);
       setMessage({ text: error.message || 'Refresh sumber data backend gagal dijalankan.', tone: 'error' });
@@ -473,7 +459,7 @@ export default function AdminApp() {
             <div className="admin-topbar-copy">
               <p className="eyebrow">Panel Admin</p>
               <h1>FloodGIS Jakarta Timur</h1>
-              <p className="hero-text">Panel review internal untuk cek draft backend, override drainase publik, dan publish snapshot hasil ke homepage.</p>
+              <p className="hero-text">Panel review internal untuk cek draft backend, override drainase publik, dan memantau hasil otomatis yang langsung dibaca homepage.</p>
             </div>
 
             <div className="admin-toolbar-actions admin-topbar-actions">
@@ -605,8 +591,8 @@ export default function AdminApp() {
             <article className="panel admin-view-hero">
               <div>
                 <span className="admin-section-kicker">Review Kecamatan</span>
-                <h2>Editor override dan publish</h2>
-                <p>Fokus utama admin ada di sini: pilih kecamatan, cek ringkasannya, koreksi jika perlu, lalu publish hasil final.</p>
+                <h2>Editor override dan review</h2>
+                <p>Fokus utama admin ada di sini: pilih kecamatan, cek ringkasannya, dan koreksi drainase publik bila memang diperlukan.</p>
               </div>
             </article>
 
@@ -674,13 +660,13 @@ export default function AdminApp() {
                   </div>
 
                   <div className="admin-inline-note admin-inline-note-strong">
-                    Publish dilakukan setelah admin selesai cek ringkasan kecamatan ini dan memastikan data yang akan tayang di homepage sudah siap dibagikan.
+                    Homepage membaca payload publik terbaru secara otomatis setelah scheduler harian atau refresh backend selesai dijalankan.
                   </div>
 
                   <section className="admin-history-block">
                     <div className="admin-history-head">
                       <strong>Riwayat Aktivitas Admin</strong>
-                      <p>Aktivitas terbaru saat save, reset, dan publish akan tercatat di sini.</p>
+                      <p>Aktivitas terbaru saat save dan reset override akan tercatat di sini.</p>
                     </div>
                     <div className="admin-history-list">
                       {history.length === 0 ? (
@@ -710,7 +696,7 @@ export default function AdminApp() {
                   <section className="admin-history-block admin-run-history-block">
                     <div className="admin-history-head">
                       <strong>Riwayat Run Prediksi</strong>
-                      <p>Histori snapshot yang sudah masuk ke SQLite dari scheduler atau publish admin.</p>
+                      <p>Histori snapshot yang sudah masuk ke SQLite dari scheduler otomatis atau refresh backend.</p>
                     </div>
                     <div className="admin-history-list">
                       {predictionRuns.length === 0 ? (
@@ -754,9 +740,6 @@ export default function AdminApp() {
                     Reset Kecamatan Ini
                   </button>
                   <a className="admin-link-button button-secondary" href={publicMapUrl}>Buka Peta Kecamatan</a>
-                  <button className="admin-action-button admin-action-button-publish" type="button" onClick={handlePublish} disabled={busy || !payload}>
-                    Publish ke Halaman Publik
-                  </button>
                 </div>
               </article>
 

@@ -47,7 +47,6 @@ def refresh_live_prediction_sources() -> Dict[str, Any]:
 
     return {
         "status": "ok",
-        "message": "Sumber data dan payload prediksi berhasil direfresh dari backend.",
+        "message": "Sumber data, draft admin, dan payload homepage berhasil direfresh otomatis dari backend.",
         "stdout": stdout,
     }
-

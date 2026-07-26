@@ -12,6 +12,7 @@ from backend_core.drainage_logic import (
 from backend_core.legacy_http import FloodGISRequestHandler
 from backend_core.legacy_core import PUBLIC_PAYLOAD_PATH, current_jakarta_timestamp, insert_prediction_run, serialize_payload
 from backend_core.prediction_logic import build_prediction_payload
+from backend_core.sqlite_store import insert_publication_snapshot
 
 
 def parse_args() -> argparse.Namespace:
@@ -47,12 +48,25 @@ def main() -> None:
         payload = build_prediction_payload()
         apply_admin_overrides_to_payload(payload, load_admin_overrides_state(), load_drainage_profiles())
         payload.setdefault("meta", {})
-        payload["meta"]["publishedAt"] = current_jakarta_timestamp().isoformat()
+        published_at = current_jakarta_timestamp().isoformat()
+        payload["meta"]["publishedAt"] = published_at
         payload["meta"]["publishedBy"] = "Scheduler backend"
-        payload["meta"]["publicPayloadSource"] = "scheduled_export"
+        payload["meta"]["publicPayloadSource"] = "scheduled_auto_publish"
         payload["meta"]["publicPayloadSourceLabel"] = "Diperbarui otomatis backend"
+        payload["meta"]["publishedOverrideResetCount"] = 0
         PUBLIC_PAYLOAD_PATH.write_bytes(serialize_payload(payload))
         insert_prediction_run(payload, "scheduled_export")
+        insert_publication_snapshot(
+            {
+                "publishedAt": published_at,
+                "payloadUpdatedAt": payload["meta"].get("updatedAt"),
+                "publishedDistrictCount": len(payload.get("districts", [])),
+                "sourceLabel": payload["meta"].get("publicPayloadSourceLabel"),
+                "generatedFromLiveAt": payload["meta"].get("updatedAt"),
+                "publishedBy": payload["meta"].get("publishedBy"),
+                "overrideResetCount": 0,
+            }
+        )
         print(f"Payload statis berhasil diekspor ke {PUBLIC_PAYLOAD_PATH}")
 
     if args.no_serve:
