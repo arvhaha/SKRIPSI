@@ -33,6 +33,7 @@ import {
 import {
   buildGeoJsonEndpoints,
   buildPredictionEndpoints,
+  buildPublicPredictionSnapshotEndpoints,
   fetchFirstAvailable,
   fetchJson
 } from '../shared/api';
@@ -40,6 +41,7 @@ import {
 function buildPredictionCandidates() {
   return [
     ...buildPredictionEndpoints().map(url => ({ url })),
+    ...buildPublicPredictionSnapshotEndpoints().map(url => ({ url })),
     {
       label: 'bundled-prediction-fallback',
       sourceUrl: 'bundled-prediction-fallback',

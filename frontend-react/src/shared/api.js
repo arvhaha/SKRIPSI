@@ -69,10 +69,23 @@ export function buildPredictionEndpoints() {
   return [...new Set(liveCandidates)];
 }
 
+export function buildPublicPredictionSnapshotEndpoints() {
+  const configuredPublicBaseUrl = getConfiguredPublicBaseUrl();
+  const candidates = [];
+
+  if (configuredPublicBaseUrl) {
+    candidates.push(`${configuredPublicBaseUrl}/data/east-jakarta-predictions.json`);
+  }
+
+  candidates.push('data/east-jakarta-predictions.json');
+  return [...new Set(candidates)];
+}
+
 export function buildGeoJsonEndpoints() {
   const protocol = window.location.protocol === 'https:' ? 'https:' : 'http:';
   const hostName = window.location.hostname || '127.0.0.1';
   const configuredApiBaseUrl = getConfiguredApiBaseUrl();
+  const configuredPublicBaseUrl = getConfiguredPublicBaseUrl();
   const candidates = [];
 
   if (configuredApiBaseUrl) {
@@ -101,6 +114,10 @@ export function buildGeoJsonEndpoints() {
     if (hostName !== '127.0.0.1') {
       candidates.push(`${protocol}//127.0.0.1:8000/api/geojson`);
     }
+  }
+
+  if (configuredPublicBaseUrl) {
+    candidates.push(`${configuredPublicBaseUrl}/data/jkt.geojson`);
   }
 
   candidates.push('data/jkt.geojson');
