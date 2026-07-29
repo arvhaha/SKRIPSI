@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 import os
 from functools import lru_cache
+from pathlib import Path
 from typing import Any
 
 import joblib
@@ -38,17 +39,29 @@ from backend_core.legacy_core import (
     SCALER_PATH,
 )
 
+def resolve_artifact_path(value: Any, fallback_path: Path) -> Path:
+    if value is None or str(value).strip() == "":
+        return fallback_path
+    candidate = Path(str(value).strip())
+    if candidate.is_absolute():
+        return candidate
+    return MODEL_CONFIG_PATH.parent / candidate
+
 
 @lru_cache(maxsize=1)
 def load_geojson_payload() -> dict[str, Any]:
     return json_loads_file(DISTRICT_GEOJSON_PATH)
 
 
-@lru_cache(maxsize=1)
-def load_operational_model_config() -> dict[str, Any]:
-    default_config = {
+def _default_horizon_config() -> dict[str, Any]:
+    return {
+        "horizon_days": 1,
         "time_steps": DEFAULT_TIME_STEPS,
         "ensemble_mode": "xgb_extreme_threshold",
+        "model_path": str(MODEL_PATH.name),
+        "xgb_path": str(XGB_PATH.name),
+        "scaler_path": str(SCALER_PATH.name),
+        "feature_columns_path": str(FEATURE_COLUMNS_PATH.name),
         "ensemble_rule": {
             "enabled": False,
             "class_2_threshold": 1.0,
@@ -63,6 +76,109 @@ def load_operational_model_config() -> dict[str, Any]:
         },
     }
 
+
+def _normalize_horizon_config(
+    horizon_key: int,
+    loaded: dict[str, Any],
+    default_source: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    base_source = default_source or _default_horizon_config()
+    decision_rule = loaded.get("decision_rule", {})
+    ensemble_rule = loaded.get("ensemble_rule", {})
+
+    return {
+        "horizon_days": int(loaded.get("horizon_days", horizon_key)),
+        "time_steps": int(loaded.get("time_steps", base_source.get("time_steps", DEFAULT_TIME_STEPS))),
+        "ensemble_mode": str(
+            loaded.get("ensemble_mode", base_source.get("ensemble_mode", "xgb_extreme_threshold"))
+        ),
+        "model_path": str(loaded.get("model_path", base_source.get("model_path", MODEL_PATH.name))),
+        "xgb_path": str(loaded.get("xgb_path", base_source.get("xgb_path", XGB_PATH.name))),
+        "scaler_path": str(
+            loaded.get("scaler_path", base_source.get("scaler_path", SCALER_PATH.name))
+        ),
+        "feature_columns_path": str(
+            loaded.get(
+                "feature_columns_path",
+                base_source.get("feature_columns_path", FEATURE_COLUMNS_PATH.name),
+            )
+        ),
+        "summary_path": str(loaded.get("summary_path", base_source.get("summary_path", ""))),
+        "ensemble_rule": {
+            "enabled": bool(ensemble_rule.get("enabled", base_source.get("ensemble_rule", {}).get("enabled", False))),
+            "class_2_threshold": float(
+                ensemble_rule.get(
+                    "class_2_threshold",
+                    base_source.get("ensemble_rule", {}).get("class_2_threshold", 1.0),
+                )
+            ),
+            "class_3_threshold": float(
+                ensemble_rule.get(
+                    "class_3_threshold",
+                    base_source.get("ensemble_rule", {}).get("class_3_threshold", 1.0),
+                )
+            ),
+            "class_2_margin": float(
+                ensemble_rule.get(
+                    "class_2_margin",
+                    base_source.get("ensemble_rule", {}).get("class_2_margin", 0.0),
+                )
+            ),
+            "class_3_margin": float(
+                ensemble_rule.get(
+                    "class_3_margin",
+                    base_source.get("ensemble_rule", {}).get("class_3_margin", 0.0),
+                )
+            ),
+            "description": str(
+                ensemble_rule.get(
+                    "description",
+                    base_source.get("ensemble_rule", {}).get("description", ""),
+                )
+            ),
+            "selection_score": float(
+                ensemble_rule.get(
+                    "selection_score",
+                    base_source.get("ensemble_rule", {}).get("selection_score", 0.0),
+                )
+            ),
+        },
+        "decision_rule": {
+            "enabled": bool(decision_rule.get("enabled", base_source.get("decision_rule", {}).get("enabled", False))),
+            "extreme_threshold": float(
+                decision_rule.get(
+                    "extreme_threshold",
+                    base_source.get("decision_rule", {}).get("extreme_threshold", 0.0),
+                )
+            ),
+            "extreme_margin": float(
+                decision_rule.get(
+                    "extreme_margin",
+                    base_source.get("decision_rule", {}).get("extreme_margin", 0.0),
+                )
+            ),
+            "description": str(
+                decision_rule.get(
+                    "description",
+                    base_source.get("decision_rule", {}).get("description", ""),
+                )
+            ),
+        },
+    }
+
+
+@lru_cache(maxsize=1)
+def load_operational_model_config() -> dict[str, Any]:
+    default_h1 = _default_horizon_config()
+    default_config = {
+        "time_steps": DEFAULT_TIME_STEPS,
+        "forecast_horizon_days": 1,
+        "horizons": {"1": default_h1},
+        "ensemble_mode": default_h1["ensemble_mode"],
+        "ensemble_rule": default_h1["ensemble_rule"],
+        "decision_rule": default_h1["decision_rule"],
+    }
+
     if not MODEL_CONFIG_PATH.exists():
         return default_config
 
@@ -71,50 +187,85 @@ def load_operational_model_config() -> dict[str, Any]:
     except Exception:
         return default_config
 
-    decision_rule = loaded.get("decision_rule", {})
-    ensemble_rule = loaded.get("ensemble_rule", {})
+    loaded_horizons = loaded.get("horizons")
+    if isinstance(loaded_horizons, dict) and loaded_horizons:
+        normalized_horizons = {
+            str(int(horizon_key)): _normalize_horizon_config(
+                int(horizon_key),
+                dict(horizon_value or {}),
+                default_h1,
+            )
+            for horizon_key, horizon_value in loaded_horizons.items()
+            if str(horizon_key).strip().isdigit()
+        }
+        if normalized_horizons:
+            first_key = sorted(normalized_horizons.keys(), key=int)[0]
+            first_horizon = normalized_horizons[first_key]
+            return {
+                "time_steps": int(loaded.get("time_steps", first_horizon["time_steps"])),
+                "forecast_horizon_days": int(
+                    loaded.get("forecast_horizon_days", max(int(key) for key in normalized_horizons))
+                ),
+                "horizons": normalized_horizons,
+                "ensemble_mode": str(loaded.get("ensemble_mode", first_horizon["ensemble_mode"])),
+                "ensemble_rule": dict(loaded.get("ensemble_rule", first_horizon["ensemble_rule"])),
+                "decision_rule": dict(loaded.get("decision_rule", first_horizon["decision_rule"])),
+            }
+
+    legacy_h1 = _normalize_horizon_config(1, loaded, default_h1)
     return {
-        "time_steps": int(loaded.get("time_steps", DEFAULT_TIME_STEPS)),
-        "ensemble_mode": str(loaded.get("ensemble_mode", "xgb_extreme_threshold")),
-        "ensemble_rule": {
-            "enabled": bool(ensemble_rule.get("enabled", False)),
-            "class_2_threshold": float(ensemble_rule.get("class_2_threshold", 1.0)),
-            "class_3_threshold": float(ensemble_rule.get("class_3_threshold", 1.0)),
-            "class_2_margin": float(ensemble_rule.get("class_2_margin", 0.0)),
-            "class_3_margin": float(ensemble_rule.get("class_3_margin", 0.0)),
-            "description": str(ensemble_rule.get("description", "")),
-            "selection_score": float(ensemble_rule.get("selection_score", 0.0)),
-        },
-        "decision_rule": {
-            "enabled": bool(decision_rule.get("enabled", False)),
-            "extreme_threshold": float(decision_rule.get("extreme_threshold", 0.0)),
-            "extreme_margin": float(decision_rule.get("extreme_margin", 0.0)),
-            "description": str(decision_rule.get("description", "")),
-        },
+        "time_steps": int(loaded.get("time_steps", legacy_h1["time_steps"])),
+        "forecast_horizon_days": 1,
+        "horizons": {"1": legacy_h1},
+        "ensemble_mode": legacy_h1["ensemble_mode"],
+        "ensemble_rule": legacy_h1["ensemble_rule"],
+        "decision_rule": legacy_h1["decision_rule"],
     }
 
 
 @lru_cache(maxsize=1)
-def load_model_bundle() -> ModelBundle:
+def load_model_bundles() -> dict[int, ModelBundle]:
     config = load_operational_model_config()
-    lstm = load_model(MODEL_PATH, compile=False)
-    extractor = Model(inputs=lstm.input, outputs=lstm.get_layer("feature_layer").output)
-    xgb = joblib.load(XGB_PATH)
-    scaler = joblib.load(SCALER_PATH)
-    feature_columns = list(joblib.load(FEATURE_COLUMNS_PATH))
-    decision_rule = dict(config.get("decision_rule", {}))
-    ensemble_rule = dict(config.get("ensemble_rule", {}))
-    return ModelBundle(
-        lstm=lstm,
-        extractor=extractor,
-        xgb=xgb,
-        scaler=scaler,
-        feature_columns=feature_columns,
-        time_steps=int(config.get("time_steps", DEFAULT_TIME_STEPS)),
-        ensemble_mode=str(config.get("ensemble_mode", "xgb_extreme_threshold")),
-        ensemble_rule=ensemble_rule,
-        decision_rule=decision_rule,
-    )
+    bundles: dict[int, ModelBundle] = {}
+
+    for horizon_key, horizon_config in dict(config.get("horizons", {})).items():
+        horizon_days = int(horizon_key)
+        model_path = resolve_artifact_path(horizon_config.get("model_path"), MODEL_PATH)
+        xgb_path = resolve_artifact_path(horizon_config.get("xgb_path"), XGB_PATH)
+        scaler_path = resolve_artifact_path(horizon_config.get("scaler_path"), SCALER_PATH)
+        feature_columns_path = resolve_artifact_path(
+            horizon_config.get("feature_columns_path"),
+            FEATURE_COLUMNS_PATH,
+        )
+
+        lstm = load_model(model_path, compile=False)
+        extractor = Model(inputs=lstm.input, outputs=lstm.get_layer("feature_layer").output)
+        xgb = joblib.load(xgb_path)
+        scaler = joblib.load(scaler_path)
+        feature_columns = list(joblib.load(feature_columns_path))
+
+        bundles[horizon_days] = ModelBundle(
+            lstm=lstm,
+            extractor=extractor,
+            xgb=xgb,
+            scaler=scaler,
+            feature_columns=feature_columns,
+            time_steps=int(horizon_config.get("time_steps", DEFAULT_TIME_STEPS)),
+            ensemble_mode=str(horizon_config.get("ensemble_mode", "xgb_extreme_threshold")),
+            ensemble_rule=dict(horizon_config.get("ensemble_rule", {})),
+            decision_rule=dict(horizon_config.get("decision_rule", {})),
+        )
+
+    return bundles
+
+
+@lru_cache(maxsize=1)
+def load_model_bundle() -> ModelBundle:
+    bundles = load_model_bundles()
+    if 1 in bundles:
+        return bundles[1]
+    first_horizon = sorted(bundles.keys())[0]
+    return bundles[first_horizon]
 
 
 def load_source_dataset() -> pd.DataFrame:
@@ -303,6 +454,7 @@ def build_district_payload(
     template_district: dict[str, Any],
     district_frame: pd.DataFrame,
     drainage_profile: DrainageProfile | None,
+    horizon_days: int = 1,
 ) -> dict[str, Any]:
     district_name = str(district_frame["Kecamatan"].iloc[0])
     sequence_frame = build_sequence_frame(district_frame, district_name, bundle.feature_columns)
@@ -355,7 +507,7 @@ def build_district_payload(
     rainfall_info = class_index_to_rainfall_info(predicted_class_index)
 
     latest_row = sequence_frame.iloc[-1]
-    forecast_date = (pd.Timestamp(latest_row["Tanggal"]) + pd.Timedelta(days=1)).strftime(
+    forecast_date = (pd.Timestamp(latest_row["Tanggal"]) + pd.Timedelta(days=horizon_days)).strftime(
         "%Y-%m-%d"
     )
     payload = copy.deepcopy(template_district)
@@ -389,6 +541,8 @@ def build_district_payload(
         "lebat_ekstrem": round(float(xgb_probabilities[3]), 4),
     }
     payload["decisionSource"] = decision_source
+    payload["forecastDayOffset"] = int(horizon_days)
+    payload["forecastDate"] = forecast_date
     payload["forecastLabel"] = f"Prediksi {forecast_date}"
     payload["actualStatusFromNotebookTest"] = ""
     payload["rainfallDisplayNote"] = (
@@ -469,6 +623,8 @@ def build_unavailable_district_payload(
     template_district: dict[str, Any],
     drainage_profile: DrainageProfile | None,
     message: str,
+    horizon_days: int = 1,
+    latest_observation_date: str | None = None,
 ) -> dict[str, Any]:
     payload = copy.deepcopy(template_district)
 
@@ -484,6 +640,8 @@ def build_unavailable_district_payload(
     payload["webgisColor"] = "Abu-abu"
     payload["webgisLevelLabel"] = "Data tidak tersedia"
     payload["webgisDescription"] = "Data historis belum tersedia"
+    payload["forecastDayOffset"] = int(horizon_days)
+    payload["forecastDate"] = None
     payload["forecastLabel"] = "Prediksi tidak tersedia"
     payload["actualStatusFromNotebookTest"] = ""
     payload["rainfallDisplayNote"] = (
@@ -531,7 +689,7 @@ def build_unavailable_district_payload(
         else None
     )
     payload["drainageNote"] = drainage_profile.note if drainage_profile is not None else ""
-    payload["latestObservationDate"] = None
+    payload["latestObservationDate"] = latest_observation_date
     payload["latestObservedRainfallMm"] = None
     payload["recentThreeDayAverageMm"] = None
     payload["predictedRainfallClassIndex"] = None
@@ -552,9 +710,35 @@ def build_unavailable_district_payload(
     return payload
 
 
+def build_root_district_payload_from_forecasts(
+    template_district: dict[str, Any],
+    forecast_payloads: list[dict[str, Any]],
+) -> dict[str, Any]:
+    root_payload = copy.deepcopy(template_district)
+    sorted_forecasts = sorted(
+        forecast_payloads,
+        key=lambda payload: int(payload.get("forecastDayOffset") or 999),
+    )
+
+    primary_forecast = sorted_forecasts[0] if sorted_forecasts else copy.deepcopy(template_district)
+    for key, value in primary_forecast.items():
+        if key == "forecasts":
+            continue
+        root_payload[key] = copy.deepcopy(value)
+
+    root_payload["forecasts"] = [copy.deepcopy(item) for item in sorted_forecasts]
+    root_payload["availableForecastDays"] = [
+        int(item.get("forecastDayOffset"))
+        for item in sorted_forecasts
+        if item.get("forecastDayOffset") is not None
+    ]
+    return root_payload
+
+
 def build_prediction_payload() -> dict[str, Any]:
     template_payload = copy.deepcopy(load_template_payload())
-    bundle = load_model_bundle()
+    bundles = load_model_bundles()
+    primary_bundle = load_model_bundle()
     drainage_profiles = load_drainage_profiles()
     source_df = load_source_dataset()
     districts_by_key = {
@@ -562,14 +746,21 @@ def build_prediction_payload() -> dict[str, Any]:
         for name, frame in source_df.groupby("Kecamatan", sort=False)
     }
 
+    available_horizon_days = sorted(bundles.keys())
     generated_districts: list[dict[str, Any]] = []
     for template_district in template_payload.get("districts", []):
         district_key = normalize_name(str(template_district.get("name", "")))
         district_frame = districts_by_key.get(district_key)
         drainage_profile = drainage_profiles.get(district_key)
+        latest_observation_date = None
+        if district_frame is not None and not district_frame.empty:
+            latest_observation_date = (
+                pd.Timestamp(district_frame.sort_values("Tanggal").iloc[-1]["Tanggal"]).strftime("%Y-%m-%d")
+            )
 
+        forecast_payloads: list[dict[str, Any]] = []
         if district_frame is None:
-            generated_districts.append(
+            forecast_payloads = [
                 build_unavailable_district_payload(
                     template_district=template_district,
                     drainage_profile=drainage_profile,
@@ -577,40 +768,60 @@ def build_prediction_payload() -> dict[str, Any]:
                         "Backend tidak menemukan data historis untuk kecamatan ini, "
                         "sehingga prediksi baru belum dapat dibentuk."
                     ),
+                    horizon_days=horizon_days,
+                    latest_observation_date=latest_observation_date,
+                )
+                for horizon_days in available_horizon_days
+            ]
+            generated_districts.append(
+                build_root_district_payload_from_forecasts(
+                    template_district=template_district,
+                    forecast_payloads=forecast_payloads,
                 )
             )
             continue
 
-        try:
-            generated_districts.append(
-                build_district_payload(
-                    bundle=bundle,
-                    template_district=template_district,
-                    district_frame=district_frame,
-                    drainage_profile=drainage_profile,
+        for horizon_days, bundle in sorted(bundles.items()):
+            try:
+                forecast_payloads.append(
+                    build_district_payload(
+                        bundle=bundle,
+                        template_district=template_district,
+                        district_frame=district_frame,
+                        drainage_profile=drainage_profile,
+                        horizon_days=horizon_days,
+                    )
                 )
-            )
-        except ValueError as error:
-            generated_districts.append(
-                build_unavailable_district_payload(
-                    template_district=template_district,
-                    drainage_profile=drainage_profile,
-                    message=str(error),
+            except ValueError as error:
+                forecast_payloads.append(
+                    build_unavailable_district_payload(
+                        template_district=template_district,
+                        drainage_profile=drainage_profile,
+                        message=str(error),
+                        horizon_days=horizon_days,
+                        latest_observation_date=latest_observation_date,
+                    )
                 )
-            )
-            continue
-        except Exception as error:  # pragma: no cover
-            generated_districts.append(
-                build_unavailable_district_payload(
-                    template_district=template_district,
-                    drainage_profile=drainage_profile,
-                    message=(
-                        "Terjadi kegagalan saat membentuk prediksi kecamatan ini dari backend. "
-                        f"Detail: {error}"
-                    ),
+            except Exception as error:  # pragma: no cover
+                forecast_payloads.append(
+                    build_unavailable_district_payload(
+                        template_district=template_district,
+                        drainage_profile=drainage_profile,
+                        message=(
+                            "Terjadi kegagalan saat membentuk prediksi kecamatan ini dari backend. "
+                            f"Detail: {error}"
+                        ),
+                        horizon_days=horizon_days,
+                        latest_observation_date=latest_observation_date,
+                    )
                 )
+
+        generated_districts.append(
+            build_root_district_payload_from_forecasts(
+                template_district=template_district,
+                forecast_payloads=forecast_payloads,
             )
-            continue
+        )
 
     now = current_jakarta_timestamp()
     latest_observation_dates = [
@@ -624,6 +835,15 @@ def build_prediction_payload() -> dict[str, Any]:
     forecast_target_dates = [
         parsed_value
         for parsed_value in (
+            parse_optional_timestamp(str(forecast.get("forecastDate") or "").strip())
+            for district in generated_districts
+            for forecast in district.get("forecasts", [])
+        )
+        if parsed_value is not None
+    ]
+    primary_forecast_target_dates = [
+        parsed_value
+        for parsed_value in (
             parse_optional_timestamp(
                 str(district.get("forecastLabel", "")).replace("Prediksi ", "", 1).strip()
             )
@@ -632,7 +852,7 @@ def build_prediction_payload() -> dict[str, Any]:
         if parsed_value is not None
     ]
     latest_observation_date = max(latest_observation_dates) if latest_observation_dates else None
-    forecast_target_date = max(forecast_target_dates) if forecast_target_dates else None
+    forecast_target_date = max(primary_forecast_target_dates) if primary_forecast_target_dates else None
     observation_age_days = (
         max(0, int((now.date() - latest_observation_date.date()).days))
         if latest_observation_date is not None
@@ -642,10 +862,10 @@ def build_prediction_payload() -> dict[str, Any]:
     if latest_observation_date is not None and latest_observation_date.date() > now.date():
         freshness_warnings.append("Tanggal observasi terakhir berada di masa depan dibanding jam server.")
     if forecast_target_date is not None and forecast_target_date.date() < now.date():
-        freshness_warnings.append("Target prediksi sudah lewat dari tanggal server saat payload dibuka.")
+        freshness_warnings.append("Target prediksi utama sudah lewat dari tanggal server saat payload dibuka.")
     if forecast_target_date is not None and latest_observation_date is not None:
         if forecast_target_date.date() < latest_observation_date.date():
-            freshness_warnings.append("Target prediksi lebih awal daripada observasi terakhir.")
+            freshness_warnings.append("Target prediksi utama lebih awal daripada observasi terakhir.")
 
     freshness_status = "ok"
     if observation_age_days is not None and observation_age_days > 3:
@@ -691,6 +911,10 @@ def build_prediction_payload() -> dict[str, Any]:
             if forecast_target_date is not None
             else None
         ),
+        "forecastTargetDates": [
+            parsed_value.strftime("%Y-%m-%d")
+            for parsed_value in sorted(set(forecast_target_dates))
+        ],
         "observationAgeDays": observation_age_days,
         "freshnessStatus": freshness_status,
         "freshnessWarnings": freshness_warnings,
@@ -698,14 +922,14 @@ def build_prediction_payload() -> dict[str, Any]:
         "refreshInterval": "Setiap permintaan API / saat halaman dimuat",
         "rainfallSource": (
             "Master_Data_Spasial_Jaktim_1990_sekarang.csv - "
-            f"jendela {bundle.time_steps} hari terakhir per kecamatan"
+            f"jendela {primary_bundle.time_steps} hari terakhir per kecamatan"
         ),
         "drainageSource": "drainase_jaktim_template_backend.csv - manual override + saran otomatis + confidence data",
-        "forecastHorizonDays": 1,
+        "forecastHorizonDays": max(available_horizon_days) if available_horizon_days else 1,
         "modelAccuracyNote": model_accuracy_note,
         "conversionNote": (
             "Backend menghitung probabilitas 4 kelas curah hujan dari data historis "
-            f"{bundle.time_steps} hari terakhir. LSTM menjadi prediksi dasar, lalu XGBoost "
+            f"{primary_bundle.time_steps} hari terakhir. LSTM menjadi prediksi dasar, lalu XGBoost "
             "pada fitur laten hanya boleh melakukan override selektif ke kelas sedang atau "
             "lebat/ekstrem saat sinyalnya cukup kuat, sebelum skor risiko dasar digeser "
             "terbatas oleh layer drainase dan confidence data."
@@ -716,11 +940,11 @@ def build_prediction_payload() -> dict[str, Any]:
             "drainase dan tingkat kepercayaan datanya."
         ),
         "modelDecisionRule": {
-            "ensembleMode": bundle.ensemble_mode,
-            "class2Threshold": round(float(bundle.ensemble_rule.get("class_2_threshold", 1.0)), 4),
-            "class3Threshold": round(float(bundle.ensemble_rule.get("class_3_threshold", 1.0)), 4),
-            "class2Margin": round(float(bundle.ensemble_rule.get("class_2_margin", 0.0)), 4),
-            "class3Margin": round(float(bundle.ensemble_rule.get("class_3_margin", 0.0)), 4),
+            "ensembleMode": primary_bundle.ensemble_mode,
+            "class2Threshold": round(float(primary_bundle.ensemble_rule.get("class_2_threshold", 1.0)), 4),
+            "class3Threshold": round(float(primary_bundle.ensemble_rule.get("class_3_threshold", 1.0)), 4),
+            "class2Margin": round(float(primary_bundle.ensemble_rule.get("class_2_margin", 0.0)), 4),
+            "class3Margin": round(float(primary_bundle.ensemble_rule.get("class_3_margin", 0.0)), 4),
         },
     }
     if latest_multiclass_summary:
@@ -740,7 +964,18 @@ def build_prediction_payload() -> dict[str, Any]:
 
     return {
         "meta": meta,
-        "forecastDays": [],
+        "forecastDays": [
+            {
+                "dayOffset": int(horizon_days),
+                "label": f"H+{int(horizon_days)}",
+                "forecastTargetDate": (
+                    (latest_observation_date + pd.Timedelta(days=int(horizon_days))).strftime("%Y-%m-%d")
+                    if latest_observation_date is not None
+                    else None
+                ),
+            }
+            for horizon_days in available_horizon_days
+        ],
         "districts": generated_districts,
     }
 
