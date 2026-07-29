@@ -619,10 +619,52 @@ button {
   font-size: 1.08rem;
 }
 
+.district-showcase-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
 .district-showcase-head p {
   margin: 7px 0 0;
   color: var(--muted);
   line-height: 1.55;
+}
+
+.forecast-day-switcher {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.forecast-day-button {
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid #c9d7e4;
+  border-radius: 999px;
+  color: #38506a;
+  background: #fff;
+  font-size: 0.86rem;
+  font-weight: 800;
+  box-shadow: 0 10px 20px rgba(16, 32, 51, 0.06);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+}
+
+.forecast-day-button:hover,
+.forecast-day-button:focus-visible {
+  transform: translateY(-1px);
+  border-color: rgba(11, 114, 133, 0.45);
+  box-shadow: 0 12px 24px rgba(11, 114, 133, 0.12);
+  outline: none;
+}
+
+.forecast-day-button.active {
+  border-color: #0b7285;
+  color: #ffffff;
+  background: linear-gradient(135deg, #0b7285, #16697a);
+  box-shadow: 0 14px 26px rgba(11, 114, 133, 0.24);
 }
 
 .district-showcase-viewport {
@@ -3097,4 +3139,36 @@ th {
   .public-home #map {
     height: 420px;
   }
+}
+/* Admin 3-day forecast + override history page */
+.admin-preview-forecast-block{display:grid;gap:12px}
+.admin-forecast-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.admin-forecast-card{display:grid;gap:10px;padding:16px 18px;border:1px solid #d8e3ed;border-radius:18px;background:linear-gradient(180deg,#fffffffa,#f2f7fb);box-shadow:inset 0 1px #ffffffcf}
+.admin-forecast-card.is-empty{place-items:start;background:linear-gradient(180deg,#f9fbfd,#f3f7fa)}
+.admin-forecast-card-top{display:flex;justify-content:space-between;gap:10px;align-items:center}
+.admin-forecast-day{display:inline-flex;align-items:center;justify-content:center;min-height:30px;padding:0 12px;border-radius:999px;color:#0d4f8b;background:#e4f0fb;font-size:.78rem;font-weight:800}
+.admin-forecast-card-top small{color:#6b8197;font-size:.8rem;font-weight:700}
+.admin-forecast-card strong{color:#061526;font-size:1rem;line-height:1.35}
+.admin-forecast-card p{margin:0;color:#24527f;font-size:.9rem;font-weight:700;line-height:1.5}
+.admin-forecast-meta{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:0}
+.admin-forecast-meta div{padding:10px 12px;border:1px solid #deE7ee;border-radius:14px;background:#f9fbfd}
+.admin-forecast-meta dt{margin:0;color:#6f8295;font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em}
+.admin-forecast-meta dd{margin:6px 0 0;color:#0f2942;font-size:.86rem;font-weight:700;line-height:1.45}
+.prediction-table-day-head{display:grid;gap:4px}
+.prediction-table-day-head strong{font-size:.8rem}
+.prediction-table-day-head small{color:#6f8295;font-size:.72rem;font-weight:700;text-transform:none}
+.table-forecast-cell{display:grid;gap:4px}
+.table-forecast-cell strong{color:#061526;font-size:.92rem;line-height:1.35}
+.table-forecast-cell span{color:#24527f;font-size:.82rem;font-weight:700;line-height:1.45}
+.table-forecast-cell small{margin:0;color:#6c8195;font-size:.76rem}
+.table-forecast-empty{color:#7c8ea0;font-size:.84rem}
+.table-forecast-detail-grid{margin-bottom:2px}
+.admin-history-page-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:22px}
+
+@media(max-width:1080px){
+.admin-forecast-grid,.admin-history-page-grid{grid-template-columns:1fr}
+}
+
+@media(max-width:720px){
+.admin-forecast-meta{grid-template-columns:1fr}
 }

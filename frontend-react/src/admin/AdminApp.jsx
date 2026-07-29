@@ -32,7 +32,7 @@ import {
   postJson
 } from '../shared/api';
 
-const ADMIN_FRONTEND_VERSION = '2026-07-25-railway-sync-1';
+const ADMIN_FRONTEND_VERSION = '2026-07-29-admin-3day-history-1';
 
 function normalizeAdminPreviewResponse(responsePayload) {
   return {
@@ -226,6 +226,94 @@ function sortDistrictsByRisk(districts) {
   });
 }
 
+function getDistrictForecasts(district) {
+  const forecasts = Array.isArray(district?.forecasts) ? district.forecasts : [];
+  return [...forecasts].sort(
+    (left, right) => Number(left?.forecastDayOffset || 0) - Number(right?.forecastDayOffset || 0)
+  );
+}
+
+function getForecastDayLabel(forecast) {
+  const dayOffset = Number(forecast?.forecastDayOffset);
+  if (!Number.isNaN(dayOffset) && dayOffset > 0) {
+    return `H+${dayOffset}`;
+  }
+
+  return 'H+?';
+}
+
+function getForecastDateLabel(forecast) {
+  if (forecast?.forecastDate) {
+    return formatDateOnly(forecast.forecastDate);
+  }
+
+  if (forecast?.forecastLabel) {
+    return formatDateOnly(String(forecast.forecastLabel).replace(/^Prediksi\s+/i, '').trim());
+  }
+
+  return '-';
+}
+
+function findForecastForDay(district, dayOffset) {
+  return getDistrictForecasts(district).find(
+    forecast => Number(forecast?.forecastDayOffset || 0) === Number(dayOffset)
+  ) || null;
+}
+
+function ForecastSummaryCard({ forecast }) {
+  if (!forecast) {
+    return (
+      <article className="admin-forecast-card is-empty">
+        <div className="admin-forecast-card-top">
+          <span className="admin-forecast-day">-</span>
+          <small>Belum tersedia</small>
+        </div>
+        <strong>Data kosong</strong>
+        <p>Forecast untuk horizon ini belum tersedia.</p>
+      </article>
+    );
+  }
+
+  return (
+    <article className="admin-forecast-card">
+      <div className="admin-forecast-card-top">
+        <span className="admin-forecast-day">{getForecastDayLabel(forecast)}</span>
+        <small>{getForecastDateLabel(forecast)}</small>
+      </div>
+      <strong>{getRainfallDisplayValue(forecast)}</strong>
+      <p>{getSemanticRiskLevelLabel(forecast)}</p>
+      <dl className="admin-forecast-meta">
+        <div>
+          <dt>Skor</dt>
+          <dd>{formatScore(forecast.riskScore)}</dd>
+        </div>
+        <div>
+          <dt>Confidence</dt>
+          <dd>{formatPercent(getProbabilityPercentValue(forecast))}</dd>
+        </div>
+        <div>
+          <dt>Drainase</dt>
+          <dd>{forecast?.drainageCondition || '-'}</dd>
+        </div>
+      </dl>
+    </article>
+  );
+}
+
+function ForecastTableCell({ forecast }) {
+  if (!forecast) {
+    return <span className="table-forecast-empty">Belum ada</span>;
+  }
+
+  return (
+    <div className="table-forecast-cell">
+      <strong>{getRainfallDisplayValue(forecast)}</strong>
+      <span>{getCompactRiskLevelLabel(forecast)}</span>
+      <small>{formatPercent(getProbabilityPercentValue(forecast))}</small>
+    </div>
+  );
+}
+
 export default function AdminApp() {
   const [payload, setPayload] = useState(null);
   const [overrides, setOverrides] = useState({});
@@ -238,7 +326,7 @@ export default function AdminApp() {
   const [draftOverrideValue, setDraftOverrideValue] = useState('');
   const [activeView, setActiveView] = useState(() => {
     const hashValue = String(window.location.hash || '').replace(/^#/, '').trim().toLowerCase();
-    return ['dashboard', 'review', 'predictions', 'backend'].includes(hashValue) ? hashValue : 'dashboard';
+    return ['dashboard', 'review', 'predictions', 'history', 'backend'].includes(hashValue) ? hashValue : 'dashboard';
   });
   const [message, setMessage] = useState({ text: '', tone: '' });
   const [busy, setBusy] = useState(false);
@@ -320,6 +408,7 @@ export default function AdminApp() {
   const districts = payload?.districts || [];
   const orderedDistricts = sortDistrictsByRisk(districts);
   const selectedDistrict = districts.find(district => district.name === selectedDistrictName) || null;
+  const selectedDistrictForecasts = selectedDistrict ? getDistrictForecasts(selectedDistrict) : [];
   const selectedOverride = selectedDistrictName ? overrides[selectedDistrictName] || null : null;
   const freshnessBanner = payload ? buildFreshnessBanner(payload, sourceUrl) : null;
   const freshnessInfo = payload ? buildFreshnessInfo(payload.meta || {}, districts) : null;
@@ -331,6 +420,9 @@ export default function AdminApp() {
   const publicMapUrl = buildPublicMapUrl(selectedDistrictName);
   const publicationLastPublished = publication?.publishedAt || publication?.payloadUpdatedAt || null;
   const draftStatus = getAdminDraftStatus(sourceUrl);
+  const forecastDayMeta = [...(payload?.forecastDays || [])].sort(
+    (left, right) => Number(left?.dayOffset || 0) - Number(right?.dayOffset || 0)
+  );
   const publicStatus = getPublicPayloadStatus(
     {
       publicPayloadSource: publication?.hasPublishedSnapshot ? 'published_snapshot' : '',
@@ -438,6 +530,7 @@ export default function AdminApp() {
               ['dashboard', 'Dashboard'],
               ['review', 'Review Kecamatan'],
               ['predictions', 'Data Prediksi'],
+              ['history', 'Riwayat Override'],
               ['backend', 'Backend Info']
             ].map(([key, label]) => (
               <button
@@ -659,77 +752,13 @@ export default function AdminApp() {
                     </div>
                   </div>
 
-                  <div className="admin-inline-note admin-inline-note-strong">
-                    Homepage membaca payload publik terbaru secara otomatis setelah scheduler harian atau refresh backend selesai dijalankan.
-                  </div>
+                <div className="admin-inline-note admin-inline-note-strong">
+                  Homepage membaca payload publik terbaru secara otomatis setelah scheduler harian atau refresh backend selesai dijalankan.
+                </div>
 
-                  <section className="admin-history-block">
-                    <div className="admin-history-head">
-                      <strong>Riwayat Aktivitas Admin</strong>
-                      <p>Aktivitas terbaru saat save dan reset override akan tercatat di sini.</p>
-                    </div>
-                    <div className="admin-history-list">
-                      {history.length === 0 ? (
-                        <div className="empty-state">Belum ada riwayat aktivitas admin.</div>
-                      ) : history.slice(0, 8).map((entry, index) => {
-                        const actionMeta = getHistoryActionMeta(entry);
-                        const districtName = formatHistoryDistrictName(entry?.districtName, districts);
-                        const description = formatHistoryDescription(entry, districtName);
-
-                        return (
-                          <article key={`${entry.timestamp}-${index}`} className="admin-history-item">
-                            <div className="admin-history-item-top">
-                              <span className={`admin-history-badge ${actionMeta.badgeClass}`.trim()}>{actionMeta.label}</span>
-                              <span className="admin-history-item-time">{formatUpdatedAt(entry.timestamp)}</span>
-                            </div>
-                            <div className="admin-history-item-head">
-                              <strong>{actionMeta.title}</strong>
-                            </div>
-                            {districtName ? <p className="admin-history-item-district">{districtName}</p> : null}
-                            <p>{description || 'Detail aktivitas belum tersedia.'}</p>
-                          </article>
-                        );
-                      })}
-                    </div>
-                  </section>
-
-                  <section className="admin-history-block admin-run-history-block">
-                    <div className="admin-history-head">
-                      <strong>Riwayat Run Prediksi</strong>
-                      <p>Histori snapshot yang sudah masuk ke SQLite dari scheduler otomatis atau refresh backend.</p>
-                    </div>
-                    <div className="admin-history-list">
-                      {predictionRuns.length === 0 ? (
-                        <div className="empty-state">Belum ada histori run prediksi.</div>
-                      ) : predictionRuns.map(run => (
-                        <article key={`${run.id}-${run.generatedAt}`} className="admin-history-item admin-run-history-item">
-                          <div className="admin-history-item-top">
-                            <span className="admin-history-badge is-info">{getPredictionRunTypeLabel(run.runType)}</span>
-                            <span className="admin-history-item-time">{formatUpdatedAt(run.publishedAt || run.generatedAt)}</span>
-                          </div>
-                          <div className="admin-history-item-head">
-                            <strong>{run.targetPredictionDate ? `Target ${formatDateOnly(run.targetPredictionDate)}` : 'Run prediksi'}</strong>
-                          </div>
-                          <p>
-                            {[
-                              run.observationDate ? `Observasi ${formatDateOnly(run.observationDate)}` : '',
-                              run.districtCount ? `${run.districtCount} kecamatan` : '',
-                              run.sourceLabel || ''
-                            ].filter(Boolean).join(' | ')}
-                          </p>
-                          {Array.isArray(run.topDistricts) && run.topDistricts.length > 0 ? (
-                            <div className="admin-run-history-tags">
-                              {run.topDistricts.map(district => (
-                                <span key={`${run.id}-${district.districtName}`} className="admin-run-history-tag">
-                                  {district.districtLabel}: {district.riskLevel || '-'}
-                                </span>
-                              ))}
-                            </div>
-                          ) : null}
-                        </article>
-                      ))}
-                    </div>
-                  </section>
+                <div className="admin-inline-note">
+                  Riwayat override dan histori run backend sekarang dipisah ke halaman <strong>Riwayat Override</strong> supaya area review kecamatan tetap fokus ke validasi dan publish draft aktif.
+                </div>
                 </section>
 
                 <div className="admin-editor-actions">
@@ -802,6 +831,23 @@ export default function AdminApp() {
                     </div>
                   </div>
 
+                  <div className="admin-preview-forecast-block">
+                    <div className="admin-history-head">
+                      <strong>Preview 3 Hari ke Depan</strong>
+                      <p>Ringkasan H+1 sampai H+3 untuk kecamatan yang sedang dipilih.</p>
+                    </div>
+                    <div className="admin-forecast-grid">
+                      {selectedDistrictForecasts.length === 0 ? (
+                        <div className="empty-state">Forecast 3 hari belum tersedia untuk kecamatan ini.</div>
+                      ) : selectedDistrictForecasts.map(forecast => (
+                        <ForecastSummaryCard
+                          key={`${selectedDistrict?.name}-${forecast.forecastDayOffset || forecast.forecastDate}`}
+                          forecast={forecast}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
                   <div className="admin-preview-copy-grid">
                     <div className="admin-preview-copy-card">
                       <span>Ringkasan</span>
@@ -834,7 +880,7 @@ export default function AdminApp() {
               <div className="panel-heading table-heading">
                 <div>
                   <h2>Data Prediksi Saat Ini</h2>
-                  <p>Klik tombol lihat untuk membuka detail kecamatan langsung di baris tabel ini.</p>
+                  <p>Setiap kecamatan menampilkan ringkasan H+1 sampai H+3. Klik tombol lihat untuk membuka detail lengkap 3 hari langsung di baris tabel ini.</p>
                 </div>
               </div>
 
@@ -843,17 +889,22 @@ export default function AdminApp() {
                   <thead>
                     <tr>
                       <th>Kecamatan</th>
-                      <th>Kelas Hujan</th>
-                      <th>Drainase</th>
-                      <th>Risiko</th>
-                      <th>Skor</th>
-                      <th>Confidence</th>
+                      {forecastDayMeta.map(day => (
+                        <th key={`forecast-head-${day.dayOffset}`}>
+                          <div className="prediction-table-day-head">
+                            <strong>{day.label || `H+${day.dayOffset}`}</strong>
+                            <small>{day.forecastTargetDate ? formatDateOnly(day.forecastTargetDate) : '-'}</small>
+                          </div>
+                        </th>
+                      ))}
+                      <th>Override</th>
                       <th>Aksi</th>
                     </tr>
                   </thead>
                   <tbody>
                     {orderedDistricts.map(district => {
-                      const tone = getRiskTone(district.riskCategory, district.webgisLevel);
+                      const districtForecasts = getDistrictForecasts(district);
+                      const districtOverride = overrides[district.name] || null;
                       const isExpanded = expandedDistrictName === district.name;
 
                       return (
@@ -863,11 +914,14 @@ export default function AdminApp() {
                               <strong>{district.label}</strong>
                               {district.hasAdminDrainageOverride ? <small>Override drainase aktif</small> : null}
                             </td>
-                            <td>{getRainfallDisplayValue(district)}</td>
-                            <td>{district.drainageCondition || '-'}</td>
-                            <td><span className={`risk-badge ${tone}`.trim()}>{getCompactRiskLevelLabel(district)}</span></td>
-                            <td>{formatScore(district.riskScore).replace(' / 100', '')}</td>
-                            <td>{formatPercent(getProbabilityPercentValue(district))}</td>
+                            {forecastDayMeta.map(day => (
+                              <td key={`${district.name}-${day.dayOffset}`}>
+                                <ForecastTableCell
+                                  forecast={findForecastForDay(district, day.dayOffset) || (Number(day.dayOffset) === 1 ? district : null)}
+                                />
+                              </td>
+                            ))}
+                            <td>{districtOverride?.drainageCondition || 'Backend'}</td>
                             <td>
                               <button
                                 className="table-action"
@@ -883,8 +937,22 @@ export default function AdminApp() {
                           </tr>
                           {isExpanded ? (
                             <tr className="table-detail-row">
-                              <td colSpan="7">
+                              <td colSpan={forecastDayMeta.length + 3}>
                                 <div className="table-detail-card">
+                                  <div className="admin-history-head">
+                                    <strong>Forecast 3 Hari Kecamatan {district.label}</strong>
+                                    <p>Lihat perbandingan H+1 sampai H+3 untuk kecamatan ini.</p>
+                                  </div>
+                                  <div className="admin-forecast-grid table-forecast-detail-grid">
+                                    {districtForecasts.length === 0 ? (
+                                      <div className="empty-state">Forecast 3 hari belum tersedia untuk kecamatan ini.</div>
+                                    ) : districtForecasts.map(forecast => (
+                                      <ForecastSummaryCard
+                                        key={`${district.name}-${forecast.forecastDayOffset || forecast.forecastDate}`}
+                                        forecast={forecast}
+                                      />
+                                    ))}
+                                  </div>
                                   <div className="table-detail-grid">
                                     <div className="table-detail-item">
                                       <span>Level WebGIS</span>
@@ -938,6 +1006,86 @@ export default function AdminApp() {
                   </tbody>
                 </table>
               </div>
+            </section>
+          </section>
+
+          <section className={`admin-view ${activeView === 'history' ? 'is-active' : ''}`.trim()} data-admin-view="history">
+            <article className="panel admin-view-hero">
+              <div>
+                <span className="admin-section-kicker">Riwayat Override</span>
+                <h2>Satu halaman histori admin</h2>
+                <p>Semua histori save/reset override dan histori run prediksi otomatis dikumpulkan di sini agar mudah diaudit.</p>
+              </div>
+            </article>
+
+            <section className="admin-history-page-grid">
+              <article className="panel admin-history-block">
+                <div className="admin-history-head">
+                  <strong>Riwayat Aktivitas Override</strong>
+                  <p>Catatan save, reset, dan publish terkait intervensi admin pada data publik.</p>
+                </div>
+                <div className="admin-history-list">
+                  {history.length === 0 ? (
+                    <div className="empty-state">Belum ada riwayat aktivitas admin.</div>
+                  ) : history.map((entry, index) => {
+                    const actionMeta = getHistoryActionMeta(entry);
+                    const districtName = formatHistoryDistrictName(entry?.districtName, districts);
+                    const description = formatHistoryDescription(entry, districtName);
+
+                    return (
+                      <article key={`${entry.timestamp}-${index}`} className="admin-history-item">
+                        <div className="admin-history-item-top">
+                          <span className={`admin-history-badge ${actionMeta.badgeClass}`.trim()}>{actionMeta.label}</span>
+                          <span className="admin-history-item-time">{formatUpdatedAt(entry.timestamp)}</span>
+                        </div>
+                        <div className="admin-history-item-head">
+                          <strong>{actionMeta.title}</strong>
+                        </div>
+                        {districtName ? <p className="admin-history-item-district">{districtName}</p> : null}
+                        <p>{description || 'Detail aktivitas belum tersedia.'}</p>
+                      </article>
+                    );
+                  })}
+                </div>
+              </article>
+
+              <article className="panel admin-history-block admin-run-history-block">
+                <div className="admin-history-head">
+                  <strong>Riwayat Run Prediksi</strong>
+                  <p>Histori snapshot yang tersimpan dari scheduler otomatis, refresh backend, atau publish admin.</p>
+                </div>
+                <div className="admin-history-list">
+                  {predictionRuns.length === 0 ? (
+                    <div className="empty-state">Belum ada histori run prediksi.</div>
+                  ) : predictionRuns.map(run => (
+                    <article key={`${run.id}-${run.generatedAt}`} className="admin-history-item admin-run-history-item">
+                      <div className="admin-history-item-top">
+                        <span className="admin-history-badge is-info">{getPredictionRunTypeLabel(run.runType)}</span>
+                        <span className="admin-history-item-time">{formatUpdatedAt(run.publishedAt || run.generatedAt)}</span>
+                      </div>
+                      <div className="admin-history-item-head">
+                        <strong>{run.targetPredictionDate ? `Target ${formatDateOnly(run.targetPredictionDate)}` : 'Run prediksi'}</strong>
+                      </div>
+                      <p>
+                        {[
+                          run.observationDate ? `Observasi ${formatDateOnly(run.observationDate)}` : '',
+                          run.districtCount ? `${run.districtCount} kecamatan` : '',
+                          run.sourceLabel || ''
+                        ].filter(Boolean).join(' | ')}
+                      </p>
+                      {Array.isArray(run.topDistricts) && run.topDistricts.length > 0 ? (
+                        <div className="admin-run-history-tags">
+                          {run.topDistricts.map(district => (
+                            <span key={`${run.id}-${district.districtName}`} className="admin-run-history-tag">
+                              {district.districtLabel}: {district.riskLevel || '-'}
+                            </span>
+                          ))}
+                        </div>
+                      ) : null}
+                    </article>
+                  ))}
+                </div>
+              </article>
             </section>
           </section>
 
