@@ -39,29 +39,37 @@ export function buildPredictionEndpoints() {
   const liveCandidates = [];
 
   if (configuredApiBaseUrl) {
+    liveCandidates.push(`${configuredApiBaseUrl}/api/predictions/live`);
     liveCandidates.push(`${configuredApiBaseUrl}/api/predictions`);
   } else {
+    liveCandidates.push('/api/predictions/live');
     liveCandidates.push('/api/predictions');
   }
 
   if (hostName === 'localhost' || hostName === '127.0.0.1') {
+    liveCandidates.push(`${protocol}//${hostName}:8011/api/predictions/live`);
     liveCandidates.push(`${protocol}//${hostName}:8011/api/predictions`);
-    
+
     if (hostName !== 'localhost') {
+      liveCandidates.push(`${protocol}//localhost:8011/api/predictions/live`);
       liveCandidates.push(`${protocol}//localhost:8011/api/predictions`);
     }
 
     if (hostName !== '127.0.0.1') {
+      liveCandidates.push(`${protocol}//127.0.0.1:8011/api/predictions/live`);
       liveCandidates.push(`${protocol}//127.0.0.1:8011/api/predictions`);
     }
 
+    liveCandidates.push(`${protocol}//${hostName}:8000/api/predictions/live`);
     liveCandidates.push(`${protocol}//${hostName}:8000/api/predictions`);
 
     if (hostName !== 'localhost') {
+      liveCandidates.push(`${protocol}//localhost:8000/api/predictions/live`);
       liveCandidates.push(`${protocol}//localhost:8000/api/predictions`);
     }
 
     if (hostName !== '127.0.0.1') {
+      liveCandidates.push(`${protocol}//127.0.0.1:8000/api/predictions/live`);
       liveCandidates.push(`${protocol}//127.0.0.1:8000/api/predictions`);
     }
   }

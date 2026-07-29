@@ -28,6 +28,7 @@ from backend_core.services.auth_service import (
 from backend_core.services.prediction_service import (
     get_admin_live_preview_payload,
     get_geojson_payload,
+    get_live_prediction_payload,
     get_public_prediction_payload,
 )
 from backend_core.services.prediction_history_service import (
@@ -225,9 +226,13 @@ def health() -> HealthResponse:
 
 
 @app.get("/api/predictions")
-@app.get("/api/predictions/live")
 def get_predictions() -> Dict[str, Any]:
     return get_public_prediction_payload()
+
+
+@app.get("/api/predictions/live")
+def get_live_predictions() -> Dict[str, Any]:
+    return get_live_prediction_payload()
 
 
 @app.get("/api/geojson")
