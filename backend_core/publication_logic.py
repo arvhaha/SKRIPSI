@@ -40,6 +40,78 @@ def _load_json_payload(path) -> dict[str, Any] | None:
     return None
 
 
+def _extract_payload_horizon_days(payload: dict[str, Any] | None) -> int:
+    if not isinstance(payload, dict):
+        return 0
+
+    forecast_days = payload.get("forecastDays")
+    if isinstance(forecast_days, list) and forecast_days:
+        offsets: list[int] = []
+        for item in forecast_days:
+            try:
+                offsets.append(int(item.get("dayOffset")))
+            except Exception:
+                continue
+        if offsets:
+            return max(offsets)
+
+    meta = payload.get("meta", {})
+    try:
+        return int(meta.get("forecastHorizonDays") or 0)
+    except Exception:
+        return 0
+
+
+def _expected_runtime_horizon_days() -> int:
+    try:
+        config_path = ROOT / "operational_multiclass_config.json"
+        if not config_path.exists():
+            return 1
+
+        config_payload = json.loads(config_path.read_text(encoding="utf-8"))
+        horizons = config_payload.get("horizons")
+        if isinstance(horizons, dict) and horizons:
+            parsed_keys = []
+            for key in horizons.keys():
+                try:
+                    parsed_keys.append(int(key))
+                except Exception:
+                    continue
+            if parsed_keys:
+                return max(parsed_keys)
+
+        return int(config_payload.get("forecast_horizon_days") or 1)
+    except Exception:
+        return 1
+
+
+def _is_payload_legacy_for_runtime(payload: dict[str, Any] | None) -> bool:
+    expected_horizon_days = _expected_runtime_horizon_days()
+    if expected_horizon_days <= 1:
+        return False
+
+    payload_horizon_days = _extract_payload_horizon_days(payload)
+    if payload_horizon_days < expected_horizon_days:
+        return True
+
+    forecast_days = payload.get("forecastDays") if isinstance(payload, dict) else None
+    if not isinstance(forecast_days, list) or not forecast_days:
+        return True
+
+    return False
+
+
+def _persist_runtime_public_payload(payload: dict[str, Any]) -> None:
+    try:
+        PUBLIC_PAYLOAD_PATH.parent.mkdir(parents=True, exist_ok=True)
+        PUBLIC_PAYLOAD_PATH.write_text(
+            json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
+    except OSError:
+        pass
+
+
 def _build_live_payload_with_snapshot_fallback() -> tuple[dict[str, Any], str]:
     try:
         payload = build_prediction_payload()
@@ -193,23 +265,27 @@ def load_public_prediction_payload() -> dict[str, Any]:
     if PUBLIC_PAYLOAD_PATH.exists():
         try:
             payload = json.loads(PUBLIC_PAYLOAD_PATH.read_text(encoding="utf-8"))
-            payload.setdefault("meta", {})
-            payload["meta"]["publicPayloadSource"] = payload["meta"].get("publicPayloadSource") or "published_snapshot"
-            payload["meta"]["publicPayloadSourceLabel"] = (
-                payload["meta"].get("publicPayloadSourceLabel") or "Snapshot publik aktif"
-            )
-            return _enrich_runtime_meta(payload)
+            if not _is_payload_legacy_for_runtime(payload):
+                payload.setdefault("meta", {})
+                payload["meta"]["publicPayloadSource"] = (
+                    payload["meta"].get("publicPayloadSource") or "published_snapshot"
+                )
+                payload["meta"]["publicPayloadSourceLabel"] = (
+                    payload["meta"].get("publicPayloadSourceLabel") or "Snapshot publik aktif"
+                )
+                return _enrich_runtime_meta(payload)
         except (json.JSONDecodeError, OSError):
             pass
 
     payload, fallback_mode = _build_live_payload_with_snapshot_fallback()
     payload.setdefault("meta", {})
     if fallback_mode == "live_model":
-        payload["meta"]["publicPayloadSource"] = "live_fallback"
-        payload["meta"]["publicPayloadSourceLabel"] = "Fallback live backend"
+        payload["meta"]["publicPayloadSource"] = "runtime_live_autofix"
+        payload["meta"]["publicPayloadSourceLabel"] = "Payload live backend 3 hari"
     else:
         payload["meta"]["publicPayloadSource"] = "bundled_snapshot_fallback"
-        payload["meta"]["publicPayloadSourceLabel"] = "Fallback snapshot bundel"
+        payload["meta"]["publicPayloadSourceLabel"] = "Snapshot bundel 3 hari"
+    _persist_runtime_public_payload(payload)
     return _enrich_runtime_meta(payload)
 
 

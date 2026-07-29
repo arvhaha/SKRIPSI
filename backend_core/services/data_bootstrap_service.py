@@ -70,6 +70,64 @@ def _write_json_if_missing(target_path: Path, payload: dict[str, Any]) -> None:
     target_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 
+def _load_json_payload(path: Path) -> dict[str, Any] | None:
+    if not path.exists():
+        return None
+
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+
+
+def _extract_payload_horizon_days(payload: dict[str, Any] | None) -> int:
+    if not isinstance(payload, dict):
+        return 0
+
+    forecast_days = payload.get("forecastDays")
+    if isinstance(forecast_days, list) and forecast_days:
+        offsets: list[int] = []
+        for item in forecast_days:
+            try:
+                offsets.append(int(item.get("dayOffset")))
+            except Exception:
+                continue
+        if offsets:
+            return max(offsets)
+
+    meta = payload.get("meta", {})
+    try:
+        return int(meta.get("forecastHorizonDays") or 0)
+    except Exception:
+        return 0
+
+
+def _copy_public_snapshot_if_source_richer(source_path: Path, target_path: Path) -> None:
+    if not source_path.exists():
+        return
+
+    source_payload = _load_json_payload(source_path)
+    target_payload = _load_json_payload(target_path)
+
+    if target_payload is None:
+        _copy_if_missing(source_path, target_path)
+        return
+
+    source_horizon_days = _extract_payload_horizon_days(source_payload)
+    target_horizon_days = _extract_payload_horizon_days(target_payload)
+    source_district_count = len(source_payload.get("districts", [])) if isinstance(source_payload, dict) else 0
+    target_district_count = len(target_payload.get("districts", [])) if isinstance(target_payload, dict) else 0
+
+    # Auto-upgrade legacy runtime snapshots that are still stuck on the old
+    # single-day structure while the bundled snapshot already supports
+    # multi-horizon output.
+    if source_horizon_days > target_horizon_days or (
+        source_horizon_days == target_horizon_days and source_district_count > target_district_count
+    ):
+        target_path.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source_path, target_path)
+
+
 def _build_template_from_snapshot(snapshot_path: Path) -> dict[str, Any] | None:
     if not snapshot_path.exists():
         return None
@@ -129,6 +187,9 @@ def ensure_runtime_data_files() -> None:
     if not PUBLIC_PAYLOAD_PATH.exists():
         _copy_if_missing(BUNDLED_PUBLIC_PAYLOAD_PATH, PUBLIC_PAYLOAD_PATH)
         _copy_if_missing(FRONTEND_PUBLIC_SNAPSHOT_PATH, PUBLIC_PAYLOAD_PATH)
+    else:
+        _copy_public_snapshot_if_source_richer(BUNDLED_PUBLIC_PAYLOAD_PATH, PUBLIC_PAYLOAD_PATH)
+        _copy_public_snapshot_if_source_richer(FRONTEND_PUBLIC_SNAPSHOT_PATH, PUBLIC_PAYLOAD_PATH)
 
     if not DISTRICT_GEOJSON_PATH.exists():
         _copy_if_missing(FRONTEND_PUBLIC_GEOJSON_PATH, DISTRICT_GEOJSON_PATH)
