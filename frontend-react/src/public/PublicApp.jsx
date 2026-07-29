@@ -61,6 +61,33 @@ function buildGeojsonCandidates() {
   ];
 }
 
+function getDistrictForecastForDay(district, dayOffset) {
+  const normalizedDayOffset = maxSafeDayOffset(dayOffset);
+  const forecasts = Array.isArray(district?.forecasts) ? district.forecasts : [];
+  return forecasts.find(forecast => Number(forecast?.forecastDayOffset) === normalizedDayOffset) || null;
+}
+
+function buildDisplayDistrict(district, dayOffset) {
+  const forecastPayload = getDistrictForecastForDay(district, dayOffset);
+  if (!forecastPayload) {
+    return district;
+  }
+
+  return {
+    ...district,
+    ...forecastPayload,
+    name: district.name,
+    label: district.label || district.name,
+    forecasts: district.forecasts || [],
+    availableForecastDays: district.availableForecastDays || []
+  };
+}
+
+function maxSafeDayOffset(value) {
+  const numericValue = Number(value);
+  return Number.isNaN(numericValue) || numericValue < 1 ? 1 : Math.trunc(numericValue);
+}
+
 function buildFreshnessBanner(meta, districts, sourceUrl) {
   const freshnessInfo = buildFreshnessInfo(meta, districts);
   const payloadMode = getPublicPayloadMode(meta);
@@ -449,6 +476,7 @@ export default function PublicApp() {
   const [geojson, setGeojson] = useState(null);
   const [sourceUrl, setSourceUrl] = useState('');
   const [selectedKey, setSelectedKey] = useState('');
+  const [selectedForecastDay, setSelectedForecastDay] = useState(1);
   const [errorMessage, setErrorMessage] = useState('');
   const cardsTrackRef = useRef(null);
 
@@ -471,17 +499,28 @@ export default function PublicApp() {
         const predictionPayload = predictionResult.payload;
         const filteredGeojson = filterEastJakartaGeojson(geojsonResult.payload, predictionPayload.districts || []);
         const requestedDistrict = new URLSearchParams(window.location.search).get('district');
+        const requestedDay = new URLSearchParams(window.location.search).get('day');
         const requestedKey = normalizeDistrictToken(requestedDistrict || '');
-        const sortedDistricts = [...(predictionPayload.districts || [])].sort(
+        const availableForecastDays = [...(predictionPayload.forecastDays || [])]
+          .map(item => maxSafeDayOffset(item?.dayOffset))
+          .sort((left, right) => left - right);
+        const initialForecastDay = availableForecastDays.includes(maxSafeDayOffset(requestedDay))
+          ? maxSafeDayOffset(requestedDay)
+          : (availableForecastDays[0] || 1);
+        const displayDistricts = (predictionPayload.districts || []).map(district =>
+          buildDisplayDistrict(district, initialForecastDay)
+        );
+        const sortedDistricts = [...displayDistricts].sort(
           (left, right) => Number(right.riskScore || 0) - Number(left.riskScore || 0)
         );
-        const initialDistrict = (predictionPayload.districts || []).find(
+        const initialDistrict = displayDistricts.find(
           district => normalizeDistrictToken(district.name) === requestedKey
         ) || sortedDistricts[0];
 
         setGeojson(filteredGeojson);
         setPayload(predictionPayload);
         setSourceUrl(predictionResult.sourceUrl);
+        setSelectedForecastDay(initialForecastDay);
         setSelectedKey(initialDistrict ? normalizeDistrictToken(initialDistrict.name) : '');
         setErrorMessage('');
       })
@@ -504,10 +543,18 @@ export default function PublicApp() {
     } else {
       url.searchParams.delete('district');
     }
+    url.searchParams.set('day', String(selectedForecastDay));
     window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
-  }, [selectedKey]);
+  }, [selectedForecastDay, selectedKey]);
 
-  const districts = payload?.districts || [];
+  const baseDistricts = payload?.districts || [];
+  const forecastDays = [...(payload?.forecastDays || [])].sort(
+    (left, right) => maxSafeDayOffset(left?.dayOffset) - maxSafeDayOffset(right?.dayOffset)
+  );
+  const effectiveForecastDay = forecastDays.some(day => maxSafeDayOffset(day?.dayOffset) === selectedForecastDay)
+    ? selectedForecastDay
+    : (forecastDays[0]?.dayOffset || 1);
+  const districts = baseDistricts.map(district => buildDisplayDistrict(district, effectiveForecastDay));
   const selectedDistrict = districts.find(district => normalizeDistrictToken(district.name) === selectedKey) || null;
   const sortedDistricts = [...districts].sort((left, right) => {
     const riskDifference = Number(right.riskScore || 0) - Number(left.riskScore || 0);
@@ -518,9 +565,19 @@ export default function PublicApp() {
     return String(left.label || '').localeCompare(String(right.label || ''), 'id');
   });
 
-  const freshnessBanner = payload ? buildFreshnessBanner(payload.meta || {}, districts, sourceUrl) : null;
+  const activeForecastMeta = forecastDays.find(
+    day => maxSafeDayOffset(day?.dayOffset) === effectiveForecastDay
+  ) || null;
+  const metaForSelectedDay = payload
+    ? {
+        ...(payload.meta || {}),
+        forecastTargetDate: activeForecastMeta?.forecastTargetDate || payload?.meta?.forecastTargetDate || null
+      }
+    : null;
+
+  const freshnessBanner = payload ? buildFreshnessBanner(metaForSelectedDay || {}, districts, sourceUrl) : null;
   const sourceStatus = getPublicPayloadStatus(payload?.meta || {}, sourceUrl);
-  const freshnessInfo = payload ? buildFreshnessInfo(payload.meta || {}, districts) : null;
+  const freshnessInfo = payload ? buildFreshnessInfo(metaForSelectedDay || {}, districts) : null;
   const averageRiskScore = districts.length
     ? Math.round(districts.reduce((sum, district) => sum + ((Number(district.riskScore) || 0) * 100), 0) / districts.length)
     : 0;
@@ -592,8 +649,28 @@ export default function PublicApp() {
           <div className="district-showcase-head">
             <div>
               <h2 id="districtShowcaseTitle">Ringkasan Kecamatan</h2>
-              <p>Geser kartu untuk melihat prediksi besok setiap kecamatan dan klik kartu untuk fokus ke wilayah tersebut.</p>
+              <p>Geser kartu untuk melihat prediksi 3 hari ke depan tiap kecamatan dan klik kartu untuk fokus ke wilayah tersebut.</p>
             </div>
+            {forecastDays.length > 0 ? (
+              <div className="forecast-day-switcher" role="tablist" aria-label="Pilih horizon prediksi">
+                {forecastDays.map(day => {
+                  const dayOffset = maxSafeDayOffset(day?.dayOffset);
+                  const isActive = dayOffset === effectiveForecastDay;
+                  return (
+                    <button
+                      key={dayOffset}
+                      className={`forecast-day-button ${isActive ? 'active' : ''}`.trim()}
+                      type="button"
+                      role="tab"
+                      aria-selected={isActive}
+                      onClick={() => setSelectedForecastDay(dayOffset)}
+                    >
+                      {day?.label || `H+${dayOffset}`}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : null}
           </div>
 
           <div className="district-showcase-viewport">

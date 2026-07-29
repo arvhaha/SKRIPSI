@@ -1373,6 +1373,34 @@ button {
   grid-template-columns: 280px minmax(0, 1fr);
 }
 
+@media (min-width: 1280px) {
+  .admin-dashboard-page {
+    --admin-default-scale: 0.7;
+  }
+
+  .admin-dashboard-layout-scaled {
+    min-height: calc(100vh / var(--admin-default-scale));
+  }
+}
+
+@supports (zoom: 1) {
+  @media (min-width: 1280px) {
+    .admin-dashboard-layout-scaled {
+      zoom: var(--admin-default-scale);
+    }
+  }
+}
+
+@supports not (zoom: 1) {
+  @media (min-width: 1280px) {
+    .admin-dashboard-layout-scaled {
+      width: calc(100% / var(--admin-default-scale));
+      transform: scale(var(--admin-default-scale));
+      transform-origin: top left;
+    }
+  }
+}
+
 .admin-dashboard-layout-full {
   grid-template-columns: minmax(0, 1fr);
 }
@@ -3164,9 +3192,13 @@ th {
 .table-forecast-empty{color:#7c8ea0;font-size:.84rem}
 .table-forecast-detail-grid{margin-bottom:2px}
 .admin-history-page-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:22px}
+.admin-history-page-grid-single{grid-template-columns:minmax(0,1fr)}
 
 @media(max-width:1080px){
-.admin-forecast-grid,.admin-history-page-grid{grid-template-columns:1fr}
+.admin-history-page-grid{grid-template-columns:1fr}
+}
+@media(max-width:720px){
+.admin-forecast-grid{grid-template-columns:1fr}
 }
 
 @media(max-width:720px){

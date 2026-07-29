@@ -513,7 +513,7 @@ export default function AdminApp() {
   };
 
   return (
-    <div className="admin-dashboard-layout">
+    <div className={`admin-dashboard-layout ${activeView !== 'predictions' ? 'admin-dashboard-layout-scaled' : ''}`.trim()}>
       <aside className="admin-sidepane">
         <a className="admin-sidebrand" href="admin.html">
           <img className="brand-logo" src={brandAssets.logoFloodgis} alt="FloodGIS Jaktim" />
@@ -953,49 +953,6 @@ export default function AdminApp() {
                                       />
                                     ))}
                                   </div>
-                                  <div className="table-detail-grid">
-                                    <div className="table-detail-item">
-                                      <span>Level WebGIS</span>
-                                      <strong>{getSemanticRiskLevelLabel(district)}</strong>
-                                    </div>
-                                    <div className="table-detail-item">
-                                      <span>Skor Risiko</span>
-                                      <strong>{formatScore(district.riskScore)}</strong>
-                                    </div>
-                                    <div className="table-detail-item">
-                                      <span>Observasi Terakhir</span>
-                                      <strong>{formatDateOnly(district.latestObservationDate)}</strong>
-                                    </div>
-                                    <div className="table-detail-item">
-                                      <span>Hujan Aktual</span>
-                                      <strong>{formatMillimeter(district.latestObservedRainfallMm)}</strong>
-                                    </div>
-                                    <div className="table-detail-item">
-                                      <span>Rata-Rata 3 Hari</span>
-                                      <strong>{formatMillimeter(district.recentThreeDayAverageMm)}</strong>
-                                    </div>
-                                    <div className="table-detail-item">
-                                      <span>Penyesuaian Drainase</span>
-                                      <strong>{formatSignedPercent(district.drainageAdjustmentPercent)}</strong>
-                                    </div>
-                                  </div>
-                                  <div className="table-detail-copy">
-                                    <div className="table-detail-copy-block">
-                                      <span>Ringkasan</span>
-                                      <p>{district.summary || '-'}</p>
-                                    </div>
-                                    <div className="table-detail-copy-block">
-                                      <span>Rekomendasi</span>
-                                      <p>{district.recommendation || '-'}</p>
-                                    </div>
-                                    <div className="table-detail-copy-block">
-                                      <span>Catatan Drainase</span>
-                                      <p>{district.drainageNote || district.drainageDataSourceName || '-'}</p>
-                                    </div>
-                                  </div>
-                                  <div className="table-detail-actions">
-                                    <a className="admin-link-button button-secondary" href={buildPublicMapUrl(district.name)}>Buka Peta Kecamatan</a>
-                                  </div>
                                 </div>
                               </td>
                             </tr>
@@ -1018,37 +975,7 @@ export default function AdminApp() {
               </div>
             </article>
 
-            <section className="admin-history-page-grid">
-              <article className="panel admin-history-block">
-                <div className="admin-history-head">
-                  <strong>Riwayat Aktivitas Override</strong>
-                  <p>Catatan save, reset, dan publish terkait intervensi admin pada data publik.</p>
-                </div>
-                <div className="admin-history-list">
-                  {history.length === 0 ? (
-                    <div className="empty-state">Belum ada riwayat aktivitas admin.</div>
-                  ) : history.map((entry, index) => {
-                    const actionMeta = getHistoryActionMeta(entry);
-                    const districtName = formatHistoryDistrictName(entry?.districtName, districts);
-                    const description = formatHistoryDescription(entry, districtName);
-
-                    return (
-                      <article key={`${entry.timestamp}-${index}`} className="admin-history-item">
-                        <div className="admin-history-item-top">
-                          <span className={`admin-history-badge ${actionMeta.badgeClass}`.trim()}>{actionMeta.label}</span>
-                          <span className="admin-history-item-time">{formatUpdatedAt(entry.timestamp)}</span>
-                        </div>
-                        <div className="admin-history-item-head">
-                          <strong>{actionMeta.title}</strong>
-                        </div>
-                        {districtName ? <p className="admin-history-item-district">{districtName}</p> : null}
-                        <p>{description || 'Detail aktivitas belum tersedia.'}</p>
-                      </article>
-                    );
-                  })}
-                </div>
-              </article>
-
+            <section className="admin-history-page-grid admin-history-page-grid-single">
               <article className="panel admin-history-block admin-run-history-block">
                 <div className="admin-history-head">
                   <strong>Riwayat Run Prediksi</strong>
