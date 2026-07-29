@@ -1,5 +1,6 @@
 {
   "time_steps": 3,
+  "forecast_horizon_days": 3,
   "feature_columns": [
     "Curah Hujan (mm)",
     "Hujan_3Hari_Kumulatif",
@@ -33,11 +34,11 @@
   "ensemble_mode": "gated_lstm_xgb_override",
   "ensemble_rule": {
     "enabled": true,
-    "class_2_threshold": 0.6,
+    "class_2_threshold": 0.55,
     "class_3_threshold": 0.65,
     "class_2_margin": 0.0,
     "class_3_margin": 0.0,
-    "selection_score": 0.381957,
+    "selection_score": 0.194819,
     "description": "LSTM menjadi prediksi dasar. XGBoost hanya boleh override ke kelas 2 atau 3 saat probabilitas laten cukup kuat."
   },
   "decision_rule": {
@@ -50,6 +51,87 @@
     "split_strategy": "chronological_per_district",
     "scaler_fit_scope": "train_only",
     "smote_scope": "latent_features_partial_classes_2_and_3",
-    "ensemble_strategy": "lstm_base_with_xgb_selective_override"
+    "ensemble_strategy": "lstm_base_with_xgb_selective_override",
+    "multi_horizon_strategy": "direct_per_horizon_models"
+  },
+  "horizons": {
+    "1": {
+      "horizon_days": 1,
+      "time_steps": 3,
+      "model_path": "model_bilstm_4class_jaktim_h1.h5",
+      "xgb_path": "model_xgboost_4class_jaktim_h1.pkl",
+      "scaler_path": "scaler_4class_jaktim_h1.pkl",
+      "feature_columns_path": "daftar_kolom_fitur_4class_h1.pkl",
+      "ensemble_mode": "gated_lstm_xgb_override",
+      "ensemble_rule": {
+        "enabled": true,
+        "class_2_threshold": 0.55,
+        "class_3_threshold": 0.65,
+        "class_2_margin": 0.0,
+        "class_3_margin": 0.0,
+        "selection_score": 0.194819,
+        "description": "LSTM menjadi prediksi dasar. XGBoost hanya boleh override ke kelas 2 atau 3 saat probabilitas laten cukup kuat."
+      },
+      "decision_rule": {
+        "enabled": true,
+        "extreme_threshold": 0.65,
+        "extreme_margin": 0.0,
+        "description": "Alias backward-compatible untuk gate kelas 3 pada mode gated ensemble."
+      },
+      "training_window_start_date": "2005-01-01",
+      "loss_mode": "focal"
+    },
+    "2": {
+      "horizon_days": 2,
+      "time_steps": 3,
+      "model_path": "model_bilstm_4class_jaktim_h2.h5",
+      "xgb_path": "model_xgboost_4class_jaktim_h2.pkl",
+      "scaler_path": "scaler_4class_jaktim_h2.pkl",
+      "feature_columns_path": "daftar_kolom_fitur_4class_h2.pkl",
+      "ensemble_mode": "gated_lstm_xgb_override",
+      "ensemble_rule": {
+        "enabled": true,
+        "class_2_threshold": 0.65,
+        "class_3_threshold": 0.6,
+        "class_2_margin": 0.0,
+        "class_3_margin": 0.0,
+        "selection_score": 0.37371,
+        "description": "LSTM menjadi prediksi dasar. XGBoost hanya boleh override ke kelas 2 atau 3 saat probabilitas laten cukup kuat."
+      },
+      "decision_rule": {
+        "enabled": true,
+        "extreme_threshold": 0.6,
+        "extreme_margin": 0.0,
+        "description": "Alias backward-compatible untuk gate kelas 3 pada mode gated ensemble."
+      },
+      "training_window_start_date": "2005-01-01",
+      "loss_mode": "focal"
+    },
+    "3": {
+      "horizon_days": 3,
+      "time_steps": 3,
+      "model_path": "model_bilstm_4class_jaktim_h3.h5",
+      "xgb_path": "model_xgboost_4class_jaktim_h3.pkl",
+      "scaler_path": "scaler_4class_jaktim_h3.pkl",
+      "feature_columns_path": "daftar_kolom_fitur_4class_h3.pkl",
+      "ensemble_mode": "gated_lstm_xgb_override",
+      "ensemble_rule": {
+        "enabled": false,
+        "class_2_threshold": 1.0,
+        "class_3_threshold": 1.0,
+        "class_2_margin": 0.0,
+        "class_3_margin": 0.0,
+        "selection_score": 0.37112,
+        "description": "Argmax LSTM murni tanpa override selektif dari XGBoost."
+      },
+      "decision_rule": {
+        "enabled": false,
+        "extreme_threshold": 1.0,
+        "extreme_margin": 0.0,
+        "description": "Alias backward-compatible untuk gate kelas 3 pada mode gated ensemble."
+      },
+      "training_window_start_date": "2005-01-01",
+      "loss_mode": "focal"
+    }
   }
 }
