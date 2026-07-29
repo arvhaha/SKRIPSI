@@ -225,6 +225,7 @@ def health() -> HealthResponse:
 
 
 @app.get("/api/predictions")
+@app.get("/api/predictions/live")
 def get_predictions() -> Dict[str, Any]:
     return get_public_prediction_payload()
 
