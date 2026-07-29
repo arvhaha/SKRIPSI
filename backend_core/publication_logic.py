@@ -62,6 +62,27 @@ def _extract_payload_horizon_days(payload: dict[str, Any] | None) -> int:
         return 0
 
 
+def _extract_payload_timestamp(payload: dict[str, Any] | None, *keys: str):
+    if not isinstance(payload, dict):
+        return None
+
+    meta = payload.get("meta", {})
+    for key in keys:
+        raw_value = meta.get(key)
+        if not raw_value:
+            continue
+        parsed_value = parse_optional_timestamp(raw_value)
+        if parsed_value is not None:
+            return parsed_value
+    return None
+
+
+def _extract_payload_retrain_marker(payload: dict[str, Any] | None) -> str:
+    if not isinstance(payload, dict):
+        return ""
+    return str(payload.get("meta", {}).get("modelLastRetrainedAt") or "").strip()
+
+
 def _expected_runtime_horizon_days() -> int:
     try:
         config_path = ROOT / "operational_multiclass_config.json"
@@ -97,6 +118,37 @@ def _is_payload_legacy_for_runtime(payload: dict[str, Any] | None) -> bool:
     forecast_days = payload.get("forecastDays") if isinstance(payload, dict) else None
     if not isinstance(forecast_days, list) or not forecast_days:
         return True
+
+    return False
+
+
+def _is_source_payload_better(source_payload: dict[str, Any] | None, target_payload: dict[str, Any] | None) -> bool:
+    if not isinstance(source_payload, dict):
+        return False
+    if not isinstance(target_payload, dict):
+        return True
+
+    source_horizon_days = _extract_payload_horizon_days(source_payload)
+    target_horizon_days = _extract_payload_horizon_days(target_payload)
+    if source_horizon_days != target_horizon_days:
+        return source_horizon_days > target_horizon_days
+
+    source_district_count = len(source_payload.get("districts", []))
+    target_district_count = len(target_payload.get("districts", []))
+    if source_district_count != target_district_count:
+        return source_district_count > target_district_count
+
+    source_updated_at = _extract_payload_timestamp(source_payload, "updatedAt", "publishedAt", "serverGeneratedAt")
+    target_updated_at = _extract_payload_timestamp(target_payload, "updatedAt", "publishedAt", "serverGeneratedAt")
+    if source_updated_at is not None and target_updated_at is not None and source_updated_at != target_updated_at:
+        return source_updated_at > target_updated_at
+    if source_updated_at is not None and target_updated_at is None:
+        return True
+
+    source_retrain_marker = _extract_payload_retrain_marker(source_payload)
+    target_retrain_marker = _extract_payload_retrain_marker(target_payload)
+    if source_retrain_marker and source_retrain_marker != target_retrain_marker:
+        return source_retrain_marker > target_retrain_marker
 
     return False
 
@@ -262,9 +314,14 @@ def summarize_publication_state(live_payload: dict[str, Any] | None = None) -> d
 
 
 def load_public_prediction_payload() -> dict[str, Any]:
+    bundled_payload = _load_json_payload(BUNDLED_PUBLIC_PAYLOAD_PATH)
+
     if PUBLIC_PAYLOAD_PATH.exists():
         try:
             payload = json.loads(PUBLIC_PAYLOAD_PATH.read_text(encoding="utf-8"))
+            if _is_source_payload_better(bundled_payload, payload):
+                payload = bundled_payload
+                _persist_runtime_public_payload(payload)
             if not _is_payload_legacy_for_runtime(payload):
                 payload.setdefault("meta", {})
                 payload["meta"]["publicPayloadSource"] = (

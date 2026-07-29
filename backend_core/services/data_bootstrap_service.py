@@ -102,6 +102,28 @@ def _extract_payload_horizon_days(payload: dict[str, Any] | None) -> int:
         return 0
 
 
+def _extract_payload_timestamp(payload: dict[str, Any] | None, *keys: str) -> pd.Timestamp | None:
+    if not isinstance(payload, dict):
+        return None
+
+    meta = payload.get("meta", {})
+    for key in keys:
+        raw_value = meta.get(key)
+        if not raw_value:
+            continue
+        try:
+            return pd.Timestamp(raw_value)
+        except Exception:
+            continue
+    return None
+
+
+def _extract_payload_retrain_marker(payload: dict[str, Any] | None) -> str:
+    if not isinstance(payload, dict):
+        return ""
+    return str(payload.get("meta", {}).get("modelLastRetrainedAt") or "").strip()
+
+
 def _copy_public_snapshot_if_source_richer(source_path: Path, target_path: Path) -> None:
     if not source_path.exists():
         return
@@ -117,12 +139,25 @@ def _copy_public_snapshot_if_source_richer(source_path: Path, target_path: Path)
     target_horizon_days = _extract_payload_horizon_days(target_payload)
     source_district_count = len(source_payload.get("districts", [])) if isinstance(source_payload, dict) else 0
     target_district_count = len(target_payload.get("districts", [])) if isinstance(target_payload, dict) else 0
+    source_updated_at = _extract_payload_timestamp(source_payload, "updatedAt", "publishedAt", "serverGeneratedAt")
+    target_updated_at = _extract_payload_timestamp(target_payload, "updatedAt", "publishedAt", "serverGeneratedAt")
+    source_retrain_marker = _extract_payload_retrain_marker(source_payload)
+    target_retrain_marker = _extract_payload_retrain_marker(target_payload)
 
     # Auto-upgrade legacy runtime snapshots that are still stuck on the old
     # single-day structure while the bundled snapshot already supports
     # multi-horizon output.
     if source_horizon_days > target_horizon_days or (
         source_horizon_days == target_horizon_days and source_district_count > target_district_count
+    ) or (
+        source_horizon_days == target_horizon_days
+        and source_district_count == target_district_count
+        and source_updated_at is not None
+        and (target_updated_at is None or source_updated_at > target_updated_at)
+    ) or (
+        source_horizon_days == target_horizon_days
+        and source_retrain_marker
+        and source_retrain_marker > target_retrain_marker
     ):
         target_path.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(source_path, target_path)
