@@ -1,0 +1,61 @@
+{
+  "updatedAt": "2026-07-25T02:42:02.327358+07:00",
+  "entries": [
+    {
+      "timestamp": "2026-07-25T02:42:02.327358+07:00",
+      "type": "publish",
+      "title": "Publish ke homepage",
+      "description": "10 kecamatan dipublish ke halaman publik. 0 draft override direset otomatis setelah publish.",
+      "districtName": null
+    },
+    {
+      "timestamp": "2026-07-24T20:19:26.497108+07:00",
+      "type": "publish",
+      "title": "Publish ke homepage",
+      "description": "10 kecamatan dipublish ke halaman publik. 0 draft override direset otomatis setelah publish.",
+      "districtName": null
+    },
+    {
+      "timestamp": "2026-07-24T20:17:39.880758+07:00",
+      "type": "publish",
+      "title": "Publish ke homepage",
+      "description": "10 kecamatan dipublish ke halaman publik. 1 draft override direset otomatis setelah publish.",
+      "districtName": null
+    },
+    {
+      "timestamp": "2026-07-24T20:17:36.620560+07:00",
+      "type": "override_saved",
+      "title": "Override drainase disimpan",
+      "description": "Pasar Rebo: drainase publik diubah menjadi baik.",
+      "districtName": "Pasar Rebo"
+    },
+    {
+      "timestamp": "2026-07-24T20:04:56.332211+07:00",
+      "type": "publish",
+      "title": "Publish ke homepage",
+      "description": "10 kecamatan dipublish ke halaman publik. 3 draft override direset otomatis setelah publish.",
+      "districtName": null
+    },
+    {
+      "timestamp": "2026-07-24T20:04:32.037386+07:00",
+      "type": "override_saved",
+      "title": "Override drainase disimpan",
+      "description": "Cakung: drainase publik diubah menjadi buruk.",
+      "districtName": "Cakung"
+    },
+    {
+      "timestamp": "2026-07-24T19:14:39.368018+07:00",
+      "type": "publish",
+      "title": "Publish ke homepage",
+      "description": "10 kecamatan dipublish ke halaman publik. 3 draft override direset otomatis setelah publish.",
+      "districtName": null
+    },
+    {
+      "timestamp": "2026-07-24T19:14:34.556963+07:00",
+      "type": "override_saved",
+      "title": "Override drainase disimpan",
+      "description": "Pasar Rebo: drainase publik diubah menjadi buruk.",
+      "districtName": "Pasar Rebo"
+    }
+  ]
+}

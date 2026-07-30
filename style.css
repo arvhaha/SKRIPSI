@@ -799,28 +799,13 @@ button {
   outline: none;
 }
 
-.showcase-card.low {
-  background:
-    radial-gradient(circle at 22% 14%, rgba(255, 255, 255, 0.72), transparent 14%),
-    linear-gradient(180deg, #e6effb 0%, #d6e4f3 100%);
-}
-
-.showcase-card.medium {
-  background:
-    radial-gradient(circle at 22% 14%, rgba(255, 255, 255, 0.74), transparent 14%),
-    linear-gradient(180deg, #edf1dd 0%, #d7e4f3 100%);
-}
-
-.showcase-card.watch {
-  background:
-    radial-gradient(circle at 22% 14%, rgba(255, 255, 255, 0.74), transparent 14%),
-    linear-gradient(180deg, #f7e7dc 0%, #d8e4f2 100%);
-}
-
+.showcase-card.low,
+.showcase-card.medium,
+.showcase-card.watch,
 .showcase-card.high {
   background:
     radial-gradient(circle at 22% 14%, rgba(255, 255, 255, 0.72), transparent 14%),
-    linear-gradient(180deg, #f3dddd 0%, #d7e3f0 100%);
+    linear-gradient(180deg, #e6effb 0%, #d6e4f3 100%);
 }
 
 .showcase-card > * {

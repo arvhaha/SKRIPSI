@@ -4,6 +4,7 @@ import argparse
 import json
 import math
 import os
+import shutil
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -237,10 +238,15 @@ def prepare_feature_frame(start_date: str | pd.Timestamp | None = None) -> tuple
 
 
 def compute_split_points(row_count: int) -> tuple[int, int]:
-    if row_count <= TIME_STEPS + 2:
+    return compute_split_points_for_horizon(row_count, horizon_days=1)
+
+
+def compute_split_points_for_horizon(row_count: int, horizon_days: int) -> tuple[int, int]:
+    minimum_rows = TIME_STEPS + int(horizon_days) + 2
+    if row_count <= minimum_rows:
         raise ValueError(
-            f"Jumlah baris {row_count} terlalu sedikit untuk time_steps={TIME_STEPS} "
-            "dan split train/val/test kronologis."
+            f"Jumlah baris {row_count} terlalu sedikit untuk time_steps={TIME_STEPS}, "
+            f"horizon_days={horizon_days}, dan split train/val/test kronologis."
         )
 
     train_end = max(TIME_STEPS + 30, int(row_count * TRAIN_RATIO))
@@ -254,17 +260,34 @@ def compute_split_points(row_count: int) -> tuple[int, int]:
     return train_end, val_end
 
 
-def prepare_dataset(start_date: str | pd.Timestamp | None = None) -> DatasetBundle:
+def build_operational_artifact_paths(horizon_days: int) -> dict[str, Path]:
+    suffix = f"_h{int(horizon_days)}"
+    return {
+        "model": ROOT / f"model_bilstm_4class_jaktim{suffix}.h5",
+        "xgb": ROOT / f"model_xgboost_4class_jaktim{suffix}.pkl",
+        "scaler": ROOT / f"scaler_4class_jaktim{suffix}.pkl",
+        "feature_columns": ROOT / f"daftar_kolom_fitur_4class{suffix}.pkl",
+    }
+
+
+def prepare_dataset(
+    start_date: str | pd.Timestamp | None = None,
+    horizon_days: int = 1,
+) -> DatasetBundle:
     df, feature_columns = prepare_feature_frame(start_date=start_date)
     district_frames: dict[str, pd.DataFrame] = {}
     split_boundaries: dict[str, dict[str, Any]] = {}
     training_rows: list[pd.DataFrame] = []
+    normalized_horizon_days = max(1, int(horizon_days))
 
     for district_name in sorted(df["Kecamatan"].unique().tolist()):
         district_frame = (
             df[df["Kecamatan"] == district_name].sort_values("Tanggal").reset_index(drop=True).copy()
         )
-        train_end, val_end = compute_split_points(len(district_frame))
+        train_end, val_end = compute_split_points_for_horizon(
+            len(district_frame),
+            horizon_days=normalized_horizon_days,
+        )
         district_frames[district_name] = district_frame
         split_boundaries[district_name] = {
             "row_count": int(len(district_frame)),
@@ -287,8 +310,12 @@ def prepare_dataset(start_date: str | pd.Timestamp | None = None) -> DatasetBund
         scaled_values = scaler.transform(district_frame[feature_columns]).astype(np.float32)
         labels = district_frame["Label"].to_numpy(dtype=np.int8)
 
-        for target_index in range(TIME_STEPS, len(district_frame)):
-            window = scaled_values[target_index - TIME_STEPS : target_index]
+        for target_index in range(TIME_STEPS + normalized_horizon_days - 1, len(district_frame)):
+            window_end_exclusive = target_index - normalized_horizon_days + 1
+            window_start_index = window_end_exclusive - TIME_STEPS
+            window = scaled_values[window_start_index:window_end_exclusive]
+            if len(window) != TIME_STEPS:
+                continue
             label = int(labels[target_index])
 
             if target_index < boundary["train_end_index"]:
@@ -313,6 +340,7 @@ def prepare_dataset(start_date: str | pd.Timestamp | None = None) -> DatasetBund
         "train_ratio": TRAIN_RATIO,
         "val_ratio": VAL_RATIO,
         "time_steps": TIME_STEPS,
+        "forecast_horizon_days": normalized_horizon_days,
         "sequence_counts": {
             "train": int(len(X_train)),
             "val": int(len(X_val)),
@@ -981,6 +1009,7 @@ def run_training(
     *,
     start_date: str | pd.Timestamp | None = None,
     time_steps: int | None = None,
+    horizon_days: int = 1,
     loss_mode: str = "cross_entropy",
     focal_gamma: float = 2.0,
     output_prefix: str = "retrain_multiclass",
@@ -992,6 +1021,7 @@ def run_training(
 
     original_time_steps = TIME_STEPS
     selected_time_steps = int(time_steps or TIME_STEPS)
+    normalized_horizon_days = max(1, int(horizon_days))
     normalized_loss_mode = str(loss_mode).strip().lower() or "cross_entropy"
     if normalized_loss_mode not in {"cross_entropy", "focal"}:
         raise ValueError("loss_mode harus 'cross_entropy' atau 'focal'.")
@@ -1011,14 +1041,17 @@ def run_training(
     try:
         if verbose:
             if normalized_start_date is None:
-                print("Menyiapkan dataset 4 class dari source penuh...")
+                print(f"Menyiapkan dataset 4 class dari source penuh untuk horizon H+{normalized_horizon_days}...")
             else:
                 print(
                     "Menyiapkan dataset 4 class dari source mulai "
-                    f"{normalized_start_date.date().isoformat()}..."
+                    f"{normalized_start_date.date().isoformat()} untuk horizon H+{normalized_horizon_days}..."
                 )
 
-        dataset = prepare_dataset(start_date=normalized_start_date)
+        dataset = prepare_dataset(
+            start_date=normalized_start_date,
+            horizon_days=normalized_horizon_days,
+        )
 
         if verbose:
             print(f"Train: {dataset.X_train.shape} | Val: {dataset.X_val.shape} | Test: {dataset.X_test.shape}")
@@ -1053,7 +1086,7 @@ def run_training(
         if verbose:
             print(
                 "\nMelatih Bi-LSTM 4 class dengan fitur temporal tambahan "
-                f"(time_steps={TIME_STEPS}, loss={normalized_loss_mode})..."
+                f"(time_steps={TIME_STEPS}, horizon=H+{normalized_horizon_days}, loss={normalized_loss_mode})..."
             )
 
         history = model_lstm.fit(
@@ -1135,6 +1168,7 @@ def run_training(
                 len(dataset.X_train) + len(dataset.X_val) + len(dataset.X_test)
             ),
             "time_steps": TIME_STEPS,
+            "forecast_horizon_days": normalized_horizon_days,
             "feature_count": int(dataset.X_train.shape[2]),
             "feature_columns": dataset.feature_columns,
             "split_summary": dataset.split_summary,
@@ -1175,11 +1209,13 @@ def run_training(
 
         operational_config = {
             "time_steps": TIME_STEPS,
+            "forecast_horizon_days": normalized_horizon_days,
             "feature_columns": dataset.feature_columns,
             "training_window_start_date": (
                 normalized_start_date.date().isoformat() if normalized_start_date is not None else None
             ),
             "loss_mode": normalized_loss_mode,
+            "horizon_days": normalized_horizon_days,
             "ensemble_mode": "gated_lstm_xgb_override",
             "ensemble_rule": best_rule,
             "decision_rule": {
@@ -1195,13 +1231,22 @@ def run_training(
                 "ensemble_strategy": "lstm_base_with_xgb_selective_override",
             },
         }
+        operational_artifact_paths = build_operational_artifact_paths(normalized_horizon_days)
+        operational_config.update(
+            {
+                "model_path": operational_artifact_paths["model"].name,
+                "xgb_path": operational_artifact_paths["xgb"].name,
+                "scaler_path": operational_artifact_paths["scaler"].name,
+                "feature_columns_path": operational_artifact_paths["feature_columns"].name,
+            }
+        )
 
         summary_path = run_dir / "training_summary.json"
         local_model_config_path = run_dir / "operational_multiclass_config.json"
-        local_model_path = run_dir / MODEL_PATH.name
-        local_xgb_path = run_dir / XGB_PATH.name
-        local_scaler_path = run_dir / SCALER_PATH.name
-        local_feature_columns_path = run_dir / FEATURE_COLUMNS_PATH.name
+        local_model_path = run_dir / operational_artifact_paths["model"].name
+        local_xgb_path = run_dir / operational_artifact_paths["xgb"].name
+        local_scaler_path = run_dir / operational_artifact_paths["scaler"].name
+        local_feature_columns_path = run_dir / operational_artifact_paths["feature_columns"].name
 
         with summary_path.open("w", encoding="utf-8") as handle:
             json.dump(to_jsonable(summary), handle, ensure_ascii=False, indent=2)
@@ -1221,10 +1266,19 @@ def run_training(
                 json.dump(to_jsonable(operational_config), handle, ensure_ascii=False, indent=2)
 
             if save_models:
-                model_lstm.save(MODEL_PATH)
-                joblib.dump(xgb_model, XGB_PATH)
-                joblib.dump(dataset.scaler, SCALER_PATH)
-                joblib.dump(dataset.feature_columns, FEATURE_COLUMNS_PATH)
+                model_lstm.save(operational_artifact_paths["model"])
+                joblib.dump(xgb_model, operational_artifact_paths["xgb"])
+                joblib.dump(dataset.scaler, operational_artifact_paths["scaler"])
+                joblib.dump(dataset.feature_columns, operational_artifact_paths["feature_columns"])
+
+                if normalized_horizon_days == 1:
+                    shutil.copy2(operational_artifact_paths["model"], MODEL_PATH)
+                    shutil.copy2(operational_artifact_paths["xgb"], XGB_PATH)
+                    shutil.copy2(operational_artifact_paths["scaler"], SCALER_PATH)
+                    shutil.copy2(
+                        operational_artifact_paths["feature_columns"],
+                        FEATURE_COLUMNS_PATH,
+                    )
 
         result = {
             "summary": summary,
@@ -1260,7 +1314,11 @@ def run_training(
                     f"{local_scaler_path}, {local_feature_columns_path}"
                 )
             if persist_operational:
-                print(f"Artefak operasional aktif diperbarui di: {MODEL_PATH}, {XGB_PATH}, {SCALER_PATH}")
+                print(
+                    "Artefak operasional aktif diperbarui di: "
+                    f"{operational_artifact_paths['model']}, {operational_artifact_paths['xgb']}, "
+                    f"{operational_artifact_paths['scaler']}"
+                )
 
         return result
     finally:
@@ -1268,10 +1326,117 @@ def run_training(
         tf.keras.backend.clear_session()
 
 
+def run_multi_horizon_training(
+    *,
+    horizons: list[int],
+    start_date: str | pd.Timestamp | None = None,
+    time_steps: int | None = None,
+    loss_mode: str = "cross_entropy",
+    focal_gamma: float = 2.0,
+    output_prefix: str = "retrain_multiclass",
+    persist_operational: bool = False,
+    save_models: bool = True,
+    verbose: bool = True,
+) -> dict[str, Any]:
+    normalized_horizons = sorted({max(1, int(horizon)) for horizon in horizons})
+    horizon_results: list[dict[str, Any]] = []
+
+    for horizon_days in normalized_horizons:
+        horizon_result = run_training(
+            start_date=start_date,
+            time_steps=time_steps,
+            horizon_days=horizon_days,
+            loss_mode=loss_mode,
+            focal_gamma=focal_gamma,
+            output_prefix=f"{output_prefix}_h{horizon_days}",
+            persist_operational=False,
+            save_models=save_models,
+            verbose=verbose,
+        )
+        horizon_results.append(
+            {
+                "horizon_days": horizon_days,
+                **horizon_result,
+            }
+        )
+
+    if persist_operational:
+        primary_result = next(
+            (item for item in horizon_results if int(item["horizon_days"]) == 1),
+            horizon_results[0],
+        )
+        primary_summary = dict(primary_result["summary"])
+        combined_operational_config = {
+            "time_steps": int(time_steps or primary_summary.get("time_steps") or TIME_STEPS),
+            "forecast_horizon_days": max(normalized_horizons),
+            "feature_columns": primary_summary.get("feature_columns", []),
+            "training_window_start_date": primary_summary.get("window_start_date"),
+            "loss_mode": loss_mode,
+            "ensemble_mode": "gated_lstm_xgb_override",
+            "ensemble_rule": primary_summary.get("ensemble_rule", {}),
+            "decision_rule": primary_summary.get("decision_rule", {}),
+            "model_notes": {
+                "split_strategy": "chronological_per_district",
+                "scaler_fit_scope": "train_only",
+                "smote_scope": "latent_features_partial_classes_2_and_3",
+                "ensemble_strategy": "lstm_base_with_xgb_selective_override",
+                "multi_horizon_strategy": "direct_per_horizon_models",
+            },
+            "horizons": {},
+        }
+
+        for result in horizon_results:
+            horizon_days = int(result["horizon_days"])
+            operational_paths = build_operational_artifact_paths(horizon_days)
+            if save_models:
+                shutil.copy2(result["model_path"], operational_paths["model"])
+                shutil.copy2(result["xgb_path"], operational_paths["xgb"])
+                shutil.copy2(result["scaler_path"], operational_paths["scaler"])
+                shutil.copy2(result["feature_columns_path"], operational_paths["feature_columns"])
+
+            if horizon_days == 1 and save_models:
+                shutil.copy2(operational_paths["model"], MODEL_PATH)
+                shutil.copy2(operational_paths["xgb"], XGB_PATH)
+                shutil.copy2(operational_paths["scaler"], SCALER_PATH)
+                shutil.copy2(operational_paths["feature_columns"], FEATURE_COLUMNS_PATH)
+
+            summary = dict(result["summary"])
+            combined_operational_config["horizons"][str(horizon_days)] = {
+                "horizon_days": horizon_days,
+                "time_steps": int(summary.get("time_steps") or TIME_STEPS),
+                "model_path": operational_paths["model"].name,
+                "xgb_path": operational_paths["xgb"].name,
+                "scaler_path": operational_paths["scaler"].name,
+                "feature_columns_path": operational_paths["feature_columns"].name,
+                "ensemble_mode": "gated_lstm_xgb_override",
+                "ensemble_rule": summary.get("ensemble_rule", {}),
+                "decision_rule": summary.get("decision_rule", {}),
+                "training_window_start_date": summary.get("window_start_date"),
+                "loss_mode": summary.get("loss_mode"),
+            }
+
+        with MODEL_CONFIG_PATH.open("w", encoding="utf-8") as handle:
+            json.dump(to_jsonable(combined_operational_config), handle, ensure_ascii=False, indent=2)
+        with LATEST_SUMMARY_PATH.open("w", encoding="utf-8") as handle:
+            json.dump(to_jsonable(primary_summary), handle, ensure_ascii=False, indent=2)
+
+    return {
+        "horizon_results": horizon_results,
+        "operational_config_path": MODEL_CONFIG_PATH if persist_operational else None,
+    }
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Retrain operational 4-class hybrid model.")
     parser.add_argument("--start-date", default=None, help="Filter data mulai tanggal YYYY-MM-DD.")
     parser.add_argument("--time-steps", type=int, default=TIME_STEPS, help="Panjang window sequence.")
+    parser.add_argument(
+        "--horizons",
+        type=int,
+        nargs="+",
+        default=[1, 2, 3],
+        help="Daftar horizon prediksi yang dilatih, misalnya --horizons 1 2 3.",
+    )
     parser.add_argument(
         "--loss-mode",
         choices=["cross_entropy", "focal"],
@@ -1304,7 +1469,22 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
-    run_training(
+    if len(args.horizons) == 1:
+        run_training(
+            start_date=args.start_date,
+            time_steps=args.time_steps,
+            horizon_days=args.horizons[0],
+            loss_mode=args.loss_mode,
+            focal_gamma=args.focal_gamma,
+            output_prefix=args.output_prefix,
+            persist_operational=not args.no_persist_operational,
+            save_models=not args.no_save_models,
+            verbose=True,
+        )
+        return
+
+    run_multi_horizon_training(
+        horizons=args.horizons,
         start_date=args.start_date,
         time_steps=args.time_steps,
         loss_mode=args.loss_mode,

@@ -4,7 +4,7 @@ import argparse
 import os
 import subprocess
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -46,7 +46,16 @@ def parse_args() -> argparse.Namespace:
         default="",
         help=(
             "Tanggal akhir update dalam format YYYY-MM-DD. Kalau kosong, "
-            "otomatis memakai tanggal hari ini sesuai timezone."
+            "otomatis memakai tanggal hari ini dikurangi source-lag-days sesuai timezone."
+        ),
+    )
+    parser.add_argument(
+        "--source-lag-days",
+        type=int,
+        default=1,
+        help=(
+            "Jarak hari dari tanggal akses ke observasi sumber terakhir yang dianggap aman "
+            "untuk diambil otomatis. Default: 1"
         ),
     )
     parser.add_argument(
@@ -102,10 +111,13 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def resolve_end_date(timezone_name: str, explicit_value: str) -> str:
+def resolve_end_date(timezone_name: str, explicit_value: str, source_lag_days: int) -> str:
     if explicit_value.strip():
         return explicit_value.strip()
-    return datetime.now(ZoneInfo(timezone_name)).date().isoformat()
+    return (
+        datetime.now(ZoneInfo(timezone_name)).date()
+        - timedelta(days=max(0, int(source_lag_days)))
+    ).isoformat()
 
 
 def run_step(command: list[str], env: dict[str, str] | None = None) -> None:
@@ -117,7 +129,7 @@ def run_step(command: list[str], env: dict[str, str] | None = None) -> None:
 
 def main() -> None:
     args = parse_args()
-    end_date = resolve_end_date(args.timezone, args.end_date)
+    end_date = resolve_end_date(args.timezone, args.end_date, args.source_lag_days)
     environment_label = args.app_environment_label.strip() or args.app_environment.upper()
 
     if not args.skip_source_update:

@@ -7,7 +7,7 @@ param(
 )
 
 $python = "C:\Users\Vino\anaconda3\envs\tf_env\python.exe"
-$script = Join-Path $PSScriptRoot "webgis_backend.py"
+$script = Join-Path $PSScriptRoot "backend_fastapi\run.py"
 
 if ([string]::IsNullOrWhiteSpace($AppEnvironmentLabel)) {
   $AppEnvironmentLabel = $AppEnvironment.ToUpperInvariant()
@@ -33,4 +33,4 @@ $env:APP_ENV = $AppEnvironment
 $env:APP_ENV_LABEL = $AppEnvironmentLabel
 $env:APP_NAME = $AppName
 
-& $python $script --port $Port
+& $python $script --port $Port --host 127.0.0.1

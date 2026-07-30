@@ -5,6 +5,7 @@ param(
   [string]$AppEnvironmentLabel = "",
   [string]$AppName = "FloodGIS Jakarta Timur",
   [int]$BackfillDays = 3,
+  [int]$SourceLagDays = 1,
   [string]$EndDate = "",
   [switch]$SkipSourceUpdate
 )
@@ -86,16 +87,23 @@ Write-Log "Mulai job scheduler harian HydroGIS."
 Write-Log "Log file: $logPath"
 Write-Log "Environment: $AppEnvironmentLabel"
 
+if ([string]::IsNullOrWhiteSpace($EndDate)) {
+  $resolvedEndDate = (Get-Date).Date.AddDays(-[Math]::Max(0, $SourceLagDays)).ToString("yyyy-MM-dd")
+}
+else {
+  $resolvedEndDate = $EndDate
+}
+
+Write-Log "Tanggal akhir observasi yang dipakai: $resolvedEndDate"
+
 if (-not $SkipSourceUpdate) {
   $updateArgs = @(
     $datasetUpdater,
     "--backfill-days",
-    $BackfillDays.ToString()
+    $BackfillDays.ToString(),
+    "--end-date",
+    $resolvedEndDate
   )
-
-  if (-not [string]::IsNullOrWhiteSpace($EndDate)) {
-    $updateArgs += @("--end-date", $EndDate)
-  }
 
   Write-Log "Langkah 1/2: update dataset cuaca incremental."
   Invoke-And-Log -FilePath $PythonPath -Arguments $updateArgs

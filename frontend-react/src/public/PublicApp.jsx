@@ -88,6 +88,24 @@ function maxSafeDayOffset(value) {
   return Number.isNaN(numericValue) || numericValue < 1 ? 1 : Math.trunc(numericValue);
 }
 
+function getForecastTabLabel(dayOffset, fallbackLabel) {
+  const normalizedDayOffset = maxSafeDayOffset(dayOffset);
+
+  if (normalizedDayOffset === 1) {
+    return 'Hari ini';
+  }
+
+  if (normalizedDayOffset === 2) {
+    return 'Besok';
+  }
+
+  if (normalizedDayOffset === 3) {
+    return 'Lusa';
+  }
+
+  return fallbackLabel || `H+${normalizedDayOffset}`;
+}
+
 function buildFreshnessBanner(meta, districts, sourceUrl) {
   const freshnessInfo = buildFreshnessInfo(meta, districts);
   const payloadMode = getPublicPayloadMode(meta);
@@ -665,7 +683,7 @@ export default function PublicApp() {
                       aria-selected={isActive}
                       onClick={() => setSelectedForecastDay(dayOffset)}
                     >
-                      {day?.label || `H+${dayOffset}`}
+                      {getForecastTabLabel(dayOffset, day?.label)}
                     </button>
                   );
                 })}

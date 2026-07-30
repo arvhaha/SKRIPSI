@@ -1,12 +1,13 @@
 param(
   [string]$TaskName = "HydroGIS Daily Prediction Refresh",
-  [string]$Time = "05:30",
+  [string]$Time = "04:00",
   [string]$PythonPath = "C:\Users\Vino\anaconda3\envs\tf_env\python.exe",
   [ValidateSet("local", "staging", "production")]
   [string]$AppEnvironment = "local",
   [string]$AppEnvironmentLabel = "",
   [string]$AppName = "FloodGIS Jakarta Timur",
   [int]$BackfillDays = 3,
+  [int]$SourceLagDays = 1,
   [switch]$SkipSourceUpdate,
   [switch]$PreviewOnly
 )
@@ -38,7 +39,8 @@ $argumentParts = @(
   "-AppEnvironment", $AppEnvironment,
   "-AppEnvironmentLabel", "`"$AppEnvironmentLabel`"",
   "-AppName", "`"$AppName`"",
-  "-BackfillDays", $BackfillDays.ToString()
+  "-BackfillDays", $BackfillDays.ToString(),
+  "-SourceLagDays", $SourceLagDays.ToString()
 )
 
 if ($SkipSourceUpdate) {

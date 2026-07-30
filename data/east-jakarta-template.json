@@ -1,0 +1,50 @@
+{
+  "meta": {
+    "appName": "FloodGIS Jakarta Timur",
+    "templateType": "district_seed",
+    "districtCount": 10
+  },
+  "forecastDays": [],
+  "districts": [
+    {
+      "name": "CAKUNG",
+      "label": "Cakung"
+    },
+    {
+      "name": "CIPAYUNG",
+      "label": "Cipayung"
+    },
+    {
+      "name": "CIRACAS",
+      "label": "Ciracas"
+    },
+    {
+      "name": "DUREN SAWIT",
+      "label": "Duren Sawit"
+    },
+    {
+      "name": "JATINEGARA",
+      "label": "Jatinegara"
+    },
+    {
+      "name": "KRAMAT JATI",
+      "label": "Kramat Jati"
+    },
+    {
+      "name": "MAKASAR",
+      "label": "Makasar"
+    },
+    {
+      "name": "MATRAMAN",
+      "label": "Matraman"
+    },
+    {
+      "name": "PASAR REBO",
+      "label": "Pasar Rebo"
+    },
+    {
+      "name": "PULOGADUNG",
+      "label": "Pulogadung"
+    }
+  ]
+}
