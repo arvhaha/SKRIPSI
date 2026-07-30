@@ -919,7 +919,7 @@ def build_prediction_payload() -> dict[str, Any]:
         "freshnessStatus": freshness_status,
         "freshnessWarnings": freshness_warnings,
         "staleDataThresholdDays": 3,
-        "refreshInterval": "Setiap permintaan API / saat halaman dimuat",
+        "refreshInterval": "Otomatis saat payload diakses bila observasi masih stale, dengan cooldown backend + scheduler harian",
         "rainfallSource": (
             "Master_Data_Spasial_Jaktim_1990_sekarang.csv - "
             f"jendela {primary_bundle.time_steps} hari terakhir per kecamatan"
