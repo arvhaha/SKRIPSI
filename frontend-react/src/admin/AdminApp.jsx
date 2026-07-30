@@ -235,6 +235,18 @@ function getDistrictForecasts(district) {
 
 function getForecastDayLabel(forecast) {
   const dayOffset = Number(forecast?.forecastDayOffset);
+  if (dayOffset === 1) {
+    return 'Hari ini';
+  }
+
+  if (dayOffset === 2) {
+    return 'Besok';
+  }
+
+  if (dayOffset === 3) {
+    return 'Lusa';
+  }
+
   if (!Number.isNaN(dayOffset) && dayOffset > 0) {
     return `H+${dayOffset}`;
   }
@@ -834,7 +846,7 @@ export default function AdminApp() {
                   <div className="admin-preview-forecast-block">
                     <div className="admin-history-head">
                       <strong>Preview 3 Hari ke Depan</strong>
-                      <p>Ringkasan H+1 sampai H+3 untuk kecamatan yang sedang dipilih.</p>
+                      <p>Ringkasan Hari ini, Besok, dan Lusa untuk kecamatan yang sedang dipilih.</p>
                     </div>
                     <div className="admin-forecast-grid">
                       {selectedDistrictForecasts.length === 0 ? (
@@ -880,7 +892,7 @@ export default function AdminApp() {
               <div className="panel-heading table-heading">
                 <div>
                   <h2>Data Prediksi Saat Ini</h2>
-                  <p>Setiap kecamatan menampilkan ringkasan H+1 sampai H+3. Klik tombol lihat untuk membuka detail lengkap 3 hari langsung di baris tabel ini.</p>
+                  <p>Setiap kecamatan menampilkan ringkasan Hari ini, Besok, dan Lusa. Klik tombol lihat untuk membuka detail lengkap 3 hari langsung di baris tabel ini.</p>
                 </div>
               </div>
 
@@ -892,7 +904,7 @@ export default function AdminApp() {
                       {forecastDayMeta.map(day => (
                         <th key={`forecast-head-${day.dayOffset}`}>
                           <div className="prediction-table-day-head">
-                            <strong>{day.label || `H+${day.dayOffset}`}</strong>
+                            <strong>{getForecastDayLabel({ forecastDayOffset: day.dayOffset })}</strong>
                             <small>{day.forecastTargetDate ? formatDateOnly(day.forecastTargetDate) : '-'}</small>
                           </div>
                         </th>
@@ -941,7 +953,7 @@ export default function AdminApp() {
                                 <div className="table-detail-card">
                                   <div className="admin-history-head">
                                     <strong>Forecast 3 Hari Kecamatan {district.label}</strong>
-                                    <p>Lihat perbandingan H+1 sampai H+3 untuk kecamatan ini.</p>
+                                    <p>Lihat perbandingan Hari ini, Besok, dan Lusa untuk kecamatan ini.</p>
                                   </div>
                                   <div className="admin-forecast-grid table-forecast-detail-grid">
                                     {districtForecasts.length === 0 ? (
