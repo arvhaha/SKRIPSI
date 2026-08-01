@@ -1,0 +1,88 @@
+@startuml
+title Activity Diagram User FloodGIS Jakarta Timur
+
+start
+:Buka website FloodGIS Jakarta Timur;
+:Sistem memuat homepage publik;
+:Sistem mengambil data prediksi dan peta;
+
+if (Data berhasil dimuat?) then (Ya)
+  :User melihat ringkasan kecamatan;
+  :User memilih horizon prediksi\n(Hari ini / Besok / Lusa);
+  :User memilih kecamatan dari kartu\natau klik wilayah pada peta;
+  :Sistem menampilkan fokus peta\nserta detail kecamatan;
+
+  if (User ingin melihat wilayah lain?) then (Ya)
+    :User memilih kecamatan lain;
+    :Sistem memperbarui peta dan detail;
+  else (Tidak)
+  endif
+
+  if (User ingin mengunduh data?) then (Ya)
+    :User klik tombol Download CSV;
+    :Sistem mengunduh file CSV kecamatan aktif;
+  else (Tidak)
+  endif
+
+  :User membaca informasi risiko\nsebagai pendukung kewaspadaan awal;
+else (Tidak)
+  :Sistem menampilkan status fallback\natau pesan gagal memuat data;
+endif
+
+stop
+
+newpage
+
+title Activity Diagram Admin FloodGIS Jakarta Timur
+
+start
+:Buka halaman admin;
+
+if (Akses admin valid?) then (Ya)
+  :Sistem memuat dashboard admin;
+  :Sistem mengambil draft prediksi live,\nstatus backend, override, dan histori;
+
+  :Admin meninjau ringkasan monitoring;
+
+  if (Perlu refresh sumber + model?) then (Ya)
+    :Admin klik Refresh Sumber + Model;
+    :Backend menjalankan refresh data,\nupdate dataset, dan bangun ulang payload;
+    :Sistem memperbarui draft admin;
+  else (Tidak)
+  endif
+
+  :Admin masuk ke halaman Review Kecamatan;
+  :Admin memilih kecamatan;
+  :Sistem menampilkan detail 3 hari\n(Hari ini / Besok / Lusa);
+
+  if (Perlu koreksi drainase publik?) then (Ya)
+    :Admin memilih override drainase;
+    :Admin simpan draft override;
+    :Sistem menyimpan override ke storage;
+  else (Tidak)
+  endif
+
+  if (Perlu membatalkan override?) then (Ya)
+    :Admin klik reset kecamatan;
+    :Sistem menghapus draft override kecamatan;
+  else (Tidak)
+  endif
+
+  :Admin meninjau tabel data prediksi;
+  :Admin meninjau histori run / override;
+
+  if (Data siap dipublikasikan?) then (Ya)
+    :Admin klik publish snapshot publik;
+    :Sistem menyimpan snapshot publik aktif;
+    :Sistem mereset override draft yang aktif;
+    :Homepage publik membaca snapshot terbaru;
+  else (Tidak)
+    :Admin kembali melakukan review;
+  endif
+
+else (Tidak)
+  :Sistem menolak akses admin;
+endif
+
+stop
+@enduml
