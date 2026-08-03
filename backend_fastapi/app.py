@@ -32,6 +32,7 @@ from backend_core.services.prediction_service import (
     get_public_prediction_payload,
 )
 from backend_core.services.prediction_history_service import (
+    get_public_district_prediction_history,
     get_prediction_run_by_id,
     get_prediction_run_history,
 )
@@ -289,6 +290,11 @@ def get_admin_prediction_run_detail(run_id: int) -> Dict[str, Any]:
             detail="Run prediksi tidak ditemukan.",
         )
     return run_detail
+
+
+@app.get("/api/predictions/history/{district_name}")
+def get_public_prediction_history(district_name: str, limit: int = 3) -> Dict[str, Any]:
+    return get_public_district_prediction_history(district_name=district_name, limit=limit)
 
 
 @app.post(

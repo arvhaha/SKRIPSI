@@ -514,6 +514,107 @@ def list_prediction_runs(limit: int = 20) -> list[dict[str, Any]]:
     return runs
 
 
+def list_district_prediction_history(district_name: str, limit: int = 3) -> list[dict[str, Any]]:
+    initialize_database()
+    safe_limit = max(1, min(int(limit), 30))
+    district_token = str(district_name or "").strip().lower()
+
+    if not district_token:
+        return []
+
+    with _connect() as connection:
+        rows = connection.execute(
+            """
+            SELECT
+                pr.id AS run_id,
+                pr.run_type,
+                pr.generated_at,
+                pr.observation_date,
+                pr.target_prediction_date,
+                pr.source_label,
+                pr.model_name,
+                pr.published_at,
+                dp.district_name,
+                dp.district_label,
+                dp.rain_class,
+                dp.rain_range_label,
+                dp.risk_level,
+                dp.risk_score,
+                dp.dominant_confidence,
+                dp.extreme_rain_probability,
+                dp.latest_observed_rainfall,
+                dp.avg_rainfall_3d,
+                dp.latest_observed_temperature_c,
+                dp.latest_observed_humidity_percent,
+                dp.drainage_condition,
+                dp.drainage_score,
+                dp.has_admin_override
+            FROM district_predictions dp
+            JOIN prediction_runs pr
+                ON pr.id = dp.prediction_run_id
+            WHERE
+                LOWER(COALESCE(dp.district_name, '')) = ?
+                OR LOWER(COALESCE(dp.district_label, '')) = ?
+            ORDER BY COALESCE(pr.target_prediction_date, pr.observation_date, pr.published_at, pr.generated_at) DESC,
+                     COALESCE(pr.published_at, pr.generated_at) DESC,
+                     pr.id DESC,
+                     dp.id DESC
+            """,
+            (district_token, district_token),
+        ).fetchall()
+
+    history: list[dict[str, Any]] = []
+    seen_dates: set[str] = set()
+
+    for row in rows:
+        target_date = str(
+            row["target_prediction_date"]
+            or row["observation_date"]
+            or row["published_at"]
+            or row["generated_at"]
+            or ""
+        )
+        target_key = target_date[:10] if target_date else f"run-{int(row['run_id'])}"
+
+        if target_key in seen_dates:
+            continue
+
+        seen_dates.add(target_key)
+        history.append(
+            {
+                "runId": int(row["run_id"]),
+                "runType": row["run_type"],
+                "generatedAt": row["generated_at"],
+                "publishedAt": row["published_at"],
+                "observationDate": row["observation_date"],
+                "targetPredictionDate": row["target_prediction_date"],
+                "sourceLabel": row["source_label"],
+                "modelName": row["model_name"],
+                "districtName": row["district_name"],
+                "districtLabel": row["district_label"],
+                "rainClass": row["rain_class"],
+                "rainRangeLabel": row["rain_range_label"],
+                "riskLevel": row["risk_level"],
+                "riskScore": row["risk_score"],
+                "dominantConfidence": row["dominant_confidence"],
+                "extremeRainProbability": row["extreme_rain_probability"],
+                "latestObservedRainfall": row["latest_observed_rainfall"],
+                "avgRainfall3d": row["avg_rainfall_3d"],
+                "latestObservedTemperatureC": row["latest_observed_temperature_c"],
+                "latestObservedHumidityPercent": row["latest_observed_humidity_percent"],
+                "drainageCondition": row["drainage_condition"],
+                "drainageScore": row["drainage_score"],
+                "hasAdminOverride": bool(row["has_admin_override"]),
+            }
+        )
+
+        if len(history) >= safe_limit:
+            break
+
+    history.reverse()
+    return history
+
+
 def get_prediction_run_detail(run_id: int) -> dict[str, Any] | None:
     initialize_database()
     safe_run_id = int(run_id)

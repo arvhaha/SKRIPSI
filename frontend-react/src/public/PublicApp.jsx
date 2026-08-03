@@ -31,12 +31,60 @@ import {
   normalizeDistrictToken
 } from '../shared/formatters';
 import {
+  buildPublicDistrictTrendHistoryEndpoints,
   buildGeoJsonEndpoints,
   buildPredictionEndpoints,
   buildPublicPredictionSnapshotEndpoints,
   fetchFirstAvailable,
   fetchJson
 } from '../shared/api';
+
+const PUBLIC_RISK_FILTERS = [
+  { key: 'all', label: 'Semua', match: () => true },
+  { key: 'level-1', label: 'Sangat Rendah', match: district => Number(district?.webgisLevel) === 1 },
+  { key: 'level-2', label: 'Ringan', match: district => Number(district?.webgisLevel) === 2 },
+  { key: 'level-3', label: 'Sedang', match: district => Number(district?.webgisLevel) === 3 },
+  { key: 'level-4', label: 'Tinggi', match: district => Number(district?.webgisLevel) >= 4 }
+];
+
+const PUBLIC_FAQ_ITEMS = [
+  {
+    key: 'about',
+    question: 'Apa itu FloodGIS Jakarta Timur?',
+    answer:
+      'FloodGIS Jakarta Timur adalah website visualisasi prediksi curah hujan dan risiko banjir per kecamatan. Sistem ini membantu pengguna melihat peta risiko, ringkasan wilayah, dan detail kondisi tiap kecamatan secara lebih mudah.'
+  },
+  {
+    key: 'sources',
+    question: 'Data yang ditampilkan berasal dari mana?',
+    answer:
+      'Informasi pada website dibentuk dari data observasi cuaca harian, data drainase wilayah, serta hasil pengolahan model prediksi backend. Data tersebut kemudian diproses dan ditampilkan kembali dalam bentuk peta, kartu ringkasan, dan panel detail kecamatan.'
+  },
+  {
+    key: 'risk-levels',
+    question: 'Apa arti level risiko Sangat Rendah, Ringan, Sedang, dan Tinggi?',
+    answer:
+      'Level risiko menunjukkan interpretasi akhir hasil prediksi untuk tiap kecamatan. Semakin tinggi levelnya, semakin besar perhatian yang perlu diberikan terhadap potensi genangan atau gangguan hidrologi di wilayah tersebut.'
+  },
+  {
+    key: 'map-reading',
+    question: 'Bagaimana cara membaca peta dan detail kecamatan?',
+    answer:
+      'Pengguna dapat memilih hari prediksi terlebih dahulu, lalu klik kartu kecamatan atau langsung klik area pada peta. Setelah itu, panel kanan akan menampilkan tingkat risiko, curah hujan, kondisi drainase, tren risiko, dan rekomendasi singkat untuk wilayah yang dipilih.'
+  },
+  {
+    key: 'metrics',
+    question: 'Apa arti skor risiko, curah hujan, dan potensi hujan lebat/ekstrem?',
+    answer:
+      'Skor risiko adalah angka yang merangkum hasil prediksi curah hujan dan penyesuaian kondisi drainase. Curah hujan menunjukkan kelas hujan dominan yang diprediksi, sedangkan potensi hujan lebat atau ekstrem menunjukkan peluang model terhadap kelas hujan dengan intensitas lebih tinggi.'
+  },
+  {
+    key: 'changes',
+    question: 'Kenapa hasil prediksi bisa berubah setiap hari?',
+    answer:
+      'Hasil dapat berubah karena backend memperbarui data observasi terbaru dan menghitung ulang prediksi secara berkala. Dengan demikian, tampilan website akan menyesuaikan kondisi data terbaru yang tersedia pada saat dibuka.'
+  }
+];
 
 function buildPredictionCandidates() {
   return [
@@ -204,6 +252,184 @@ function downloadDistrictCsv(district) {
   URL.revokeObjectURL(url);
 }
 
+function getRiskFilterMeta(filterKey) {
+  return PUBLIC_RISK_FILTERS.find(item => item.key === filterKey) || PUBLIC_RISK_FILTERS[0];
+}
+
+function getDistrictRecommendationItems(district) {
+  const level = Number(district?.webgisLevel || 0);
+
+  if (level >= 4) {
+    return [
+      'Prioritaskan kewaspadaan pada lokasi yang sering tergenang.',
+      'Batasi aktivitas di sekitar saluran atau ruas jalan rawan genangan.',
+      'Siapkan rute alternatif dan pantau pembaruan cuaca berikutnya.'
+    ];
+  }
+
+  if (level === 3) {
+    return [
+      'Tingkatkan kewaspadaan terutama saat hujan berlangsung lebih lama.',
+      'Periksa jalur drainase sekitar rumah atau lingkungan terdekat.',
+      'Siapkan langkah antisipasi genangan pada titik yang biasa bermasalah.'
+    ];
+  }
+
+  if (level === 2) {
+    return [
+      'Tetap waspada terhadap genangan lokal saat hujan ringan hingga sedang.',
+      'Bersihkan sedimen dan sampah di sekitar saluran terdekat.',
+      'Pastikan aliran air di lingkungan sekitar tidak tersumbat.'
+    ];
+  }
+
+  return [
+    'Pertahankan pemantauan cuaca rutin pada wilayah ini.',
+    'Jaga kebersihan saluran dan area sekitar agar aliran air tetap lancar.',
+    'Gunakan informasi ini sebagai visualisasi awal, bukan peringatan operasional final.'
+  ];
+}
+
+function getDistrictRecommendationTitle(district) {
+  const level = Number(district?.webgisLevel || 0);
+
+  if (level >= 4) {
+    return 'Risiko tinggi. Waspadai potensi genangan dan prioritaskan langkah antisipasi lapangan.';
+  }
+
+  if (level === 3) {
+    return 'Risiko sedang. Pemantauan perlu ditingkatkan terutama bila hujan berlangsung berulang.';
+  }
+
+  if (level === 2) {
+    return 'Risiko ringan. Tetap waspada terhadap genangan lokal saat hujan ringan hingga sedang.';
+  }
+
+  return 'Risiko sangat rendah. Kondisi relatif aman, namun pemantauan rutin tetap diperlukan.';
+}
+
+function getRiskTrendSummary(trendSeries) {
+  if (trendSeries.length < 2) {
+    return {
+      title: 'Tren belum terbaca',
+      note: 'Histori risiko harian belum cukup untuk membaca arah perubahan.'
+    };
+  }
+
+  const firstValue = Number(trendSeries[0]?.value || 0);
+  const lastValue = Number(trendSeries[trendSeries.length - 1]?.value || 0);
+  const delta = lastValue - firstValue;
+
+  if (delta >= 3) {
+    return {
+      title: 'Tren naik',
+      note: 'Skor risiko cenderung meningkat pada tiga hari terakhir yang tercatat.'
+    };
+  }
+
+  if (delta <= -3) {
+    return {
+      title: 'Tren turun',
+      note: 'Skor risiko cenderung menurun pada tiga hari terakhir yang tercatat.'
+    };
+  }
+
+  return {
+    title: 'Relatif stabil',
+    note: 'Perubahan skor risiko antar hari terakhir masih dalam rentang kecil.'
+  };
+}
+
+function RiskTrendCard({ trendSeries, isLoading }) {
+  if (isLoading) {
+    return (
+      <div className="detail-trend-card">
+        <div className="detail-trend-head">
+          <div>
+            <span>Tren Risiko 3 Hari Terakhir</span>
+            <strong>Memuat histori</strong>
+          </div>
+          <small>Backend sedang mengambil riwayat skor risiko kecamatan terpilih.</small>
+        </div>
+      </div>
+    );
+  }
+
+  if (trendSeries.length === 0) {
+    return null;
+  }
+
+  const summary = getRiskTrendSummary(trendSeries);
+  const chartWidth = 320;
+  const chartHeight = 124;
+  const leftPad = 18;
+  const rightPad = 18;
+  const topPad = 18;
+  const bottomPad = 28;
+  const usableWidth = chartWidth - leftPad - rightPad;
+  const usableHeight = chartHeight - topPad - bottomPad;
+  const maxValue = Math.max(...trendSeries.map(item => Number(item.value || 0)), 1);
+  const minValue = Math.min(...trendSeries.map(item => Number(item.value || 0)), 0);
+  const range = Math.max(maxValue - minValue, 6);
+
+  const points = trendSeries.map((item, index) => {
+    const x = leftPad + (trendSeries.length === 1 ? usableWidth / 2 : (usableWidth * index) / (trendSeries.length - 1));
+    const y = topPad + usableHeight - (((Number(item.value || 0) - minValue) / range) * usableHeight);
+    return {
+      ...item,
+      x,
+      y
+    };
+  });
+
+  const polylinePoints = points.map(point => `${point.x},${point.y}`).join(' ');
+
+  return (
+    <div className="detail-trend-card">
+      <div className="detail-trend-head">
+        <div>
+          <span>Tren Risiko 3 Hari Terakhir</span>
+          <strong>{summary.title}</strong>
+        </div>
+        <small>{summary.note}</small>
+      </div>
+
+      <div className="detail-trend-chart" aria-label="Grafik tren risiko 3 hari terakhir">
+        <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} role="img">
+          <defs>
+            <linearGradient id="riskTrendLine" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#0b7285" />
+              <stop offset="100%" stopColor="#1d4ed8" />
+            </linearGradient>
+          </defs>
+          <line x1={leftPad} y1={chartHeight - bottomPad} x2={chartWidth - rightPad} y2={chartHeight - bottomPad} className="trend-axis-line" />
+          <polyline points={polylinePoints} className="trend-line" />
+          {points.map(point => (
+            <g key={point.key}>
+              <circle cx={point.x} cy={point.y} r="4.5" className="trend-dot" />
+              <text x={point.x} y={point.y - 10} textAnchor="middle" className="trend-value-label">
+                {`${Math.round(point.value)}%`}
+              </text>
+              <text x={point.x} y={chartHeight - 8} textAnchor="middle" className="trend-x-label">
+                {point.label}
+              </text>
+            </g>
+          ))}
+        </svg>
+      </div>
+
+      <div className="detail-trend-footer">
+        {trendSeries.map(item => (
+          <div key={`legend-${item.key}`} className="detail-trend-step">
+            <strong>{item.label}</strong>
+            <span>{item.dateLabel}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function PublicRiskMap({ geojson, districts, selectedKey, onSelect }) {
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
@@ -267,9 +493,6 @@ function PublicRiskMap({ geojson, districts, selectedKey, onSelect }) {
 
     const popupContent = district => {
       const forecastText = district.forecastLabel || 'Prediksi aktif';
-      const modelInfo = !Number.isNaN(getPredictedClassConfidencePercentValue(district))
-        ? `<br>Confidence kelas dominan: ${formatPercent(getPredictedClassConfidencePercentValue(district))}`
-        : '';
       const semanticRiskLabel = getSemanticRiskLevelLabel(district);
       const riskInfo = semanticRiskLabel ? `<br>Tingkat risiko: ${semanticRiskLabel}` : '';
       const drainageInfo = district.drainageCondition ? `<br>Drainase: ${district.drainageCondition}` : '';
@@ -279,7 +502,6 @@ function PublicRiskMap({ geojson, districts, selectedKey, onSelect }) {
         ${forecastText}: ${getRainfallDisplayValue(district)}
         ${drainageInfo}
         ${riskInfo}
-        ${modelInfo}
       `;
     };
 
@@ -402,6 +624,22 @@ function PublicRiskMap({ geojson, districts, selectedKey, onSelect }) {
   }, [geojson, districts, onSelect]);
 
   useEffect(() => {
+    if (!mapContainerRef.current || !mapRef.current || typeof ResizeObserver === 'undefined') {
+      return undefined;
+    }
+
+    const observer = new ResizeObserver(() => {
+      mapRef.current?.invalidateSize();
+    });
+
+    observer.observe(mapContainerRef.current);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+
+  useEffect(() => {
     if (!selectedKey || !mapRef.current || !layerStateRef.current.geojsonLayer) {
       return;
     }
@@ -433,7 +671,64 @@ function PublicRiskMap({ geojson, districts, selectedKey, onSelect }) {
   return <div id="map" ref={mapContainerRef} />;
 }
 
-function DetailPanel({ district }) {
+function MetricInfoCard({ label, value }) {
+  return (
+    <div className="detail-metric-card">
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
+  );
+}
+
+function PublicFaqSection() {
+  const [openKey, setOpenKey] = useState(PUBLIC_FAQ_ITEMS[0]?.key || '');
+
+  return (
+    <section className="panel public-faq-section" aria-labelledby="publicFaqTitle">
+      <div className="public-faq-layout">
+        <div className="public-faq-copy">
+          <p className="public-faq-kicker">Panduan Singkat</p>
+          <h2 id="publicFaqTitle">FAQs</h2>
+          <p>
+            Beberapa pertanyaan umum ini membantu pengguna memahami tujuan FloodGIS,
+            sumber data, arti metrik, dan cara membaca hasil visualisasi.
+          </p>
+        </div>
+
+        <div className="public-faq-list">
+          {PUBLIC_FAQ_ITEMS.map(item => {
+            const isOpen = item.key === openKey;
+
+            return (
+              <article key={item.key} className={`public-faq-item ${isOpen ? 'is-open' : ''}`.trim()}>
+                <button
+                  type="button"
+                  className="public-faq-trigger"
+                  aria-expanded={isOpen}
+                  aria-controls={`faq-panel-${item.key}`}
+                  onClick={() => setOpenKey(current => (current === item.key ? '' : item.key))}
+                >
+                  <span>{item.question}</span>
+                  <span className="public-faq-icon" aria-hidden="true">
+                    {isOpen ? '−' : '+'}
+                  </span>
+                </button>
+
+                {isOpen ? (
+                  <div id={`faq-panel-${item.key}`} className="public-faq-panel">
+                    <p>{item.answer}</p>
+                  </div>
+                ) : null}
+              </article>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function DetailPanel({ district, trendSeries, isTrendLoading }) {
   if (!district) {
     return (
       <div className="detail-content">
@@ -445,36 +740,53 @@ function DetailPanel({ district }) {
   }
 
   const forecastValue = String(district.forecastLabel || '').replace(/^Prediksi\s+/i, '').trim();
+  const recommendationItems = getDistrictRecommendationItems(district);
+  const recommendationTitle = district.recommendation || getDistrictRecommendationTitle(district);
 
   return (
     <div className="detail-content">
       <div className="detail-sheet">
         <div className="detail-sheet-head">
           <h3 className="detail-sheet-title">{district.label}</h3>
-          <p className="detail-sheet-date">{formatDateNumeric(forecastValue || district.latestObservationDate)}</p>
+          <div className="detail-sheet-meta-row">
+            <p className="detail-sheet-date">{formatDateNumeric(forecastValue || district.latestObservationDate)}</p>
+            <span className={`detail-risk-pill ${getRiskTone(district)}`.trim()}>{getDetailRiskDisplay(district)}</span>
+          </div>
         </div>
 
-        <div className="detail-sheet-stack">
-          <div className="detail-stack-card">
-            <span>Tingkat Risiko</span>
-            <strong>{getDetailRiskDisplay(district)}</strong>
-          </div>
-          <div className="detail-stack-card">
-            <span>Curah Hujan</span>
-            <strong>{getDetailRainDisplay(district)}</strong>
-          </div>
-          <div className="detail-stack-card">
-            <span>Kondisi Drainase</span>
-            <strong>{district.drainageCondition || 'Tidak tersedia'}</strong>
-          </div>
-          <div className="detail-stack-card">
-            <span>Rata-Rata 3 Hari</span>
-            <strong>{formatRainMm(district.recentThreeDayAverageMm)}</strong>
-          </div>
-          <div className="detail-stack-card">
-            <span>Potensi Hujan Lebat/Ekstrem</span>
-            <strong>{formatPercent(district.probabilityWaspadaPercent)}</strong>
-          </div>
+        <div className="detail-metric-grid">
+          <MetricInfoCard
+            label="Tingkat Risiko"
+            value={getDetailRiskDisplay(district)}
+          />
+          <MetricInfoCard
+            label="Curah Hujan"
+            value={getDetailRainDisplay(district)}
+          />
+          <MetricInfoCard
+            label="Kondisi Drainase"
+            value={district.drainageCondition || 'Tidak tersedia'}
+          />
+          <MetricInfoCard
+            label="Rata-Rata 3 Hari"
+            value={formatRainMm(district.recentThreeDayAverageMm)}
+          />
+          <MetricInfoCard
+            label="Potensi Hujan Lebat/Ekstrem"
+            value={formatPercent(district.probabilityWaspadaPercent)}
+          />
+        </div>
+
+        <RiskTrendCard trendSeries={trendSeries} isLoading={isTrendLoading} />
+
+        <div className="detail-recommendation-card">
+          <span>Rekomendasi</span>
+          <strong>{recommendationTitle}</strong>
+          <ul>
+            {recommendationItems.map(item => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
         </div>
 
         <button
@@ -495,6 +807,9 @@ export default function PublicApp() {
   const [sourceUrl, setSourceUrl] = useState('');
   const [selectedKey, setSelectedKey] = useState('');
   const [selectedForecastDay, setSelectedForecastDay] = useState(1);
+  const [riskFilter, setRiskFilter] = useState('all');
+  const [riskTrendHistory, setRiskTrendHistory] = useState([]);
+  const [riskTrendLoading, setRiskTrendLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const cardsTrackRef = useRef(null);
 
@@ -573,8 +888,9 @@ export default function PublicApp() {
     ? selectedForecastDay
     : (forecastDays[0]?.dayOffset || 1);
   const districts = baseDistricts.map(district => buildDisplayDistrict(district, effectiveForecastDay));
-  const selectedDistrict = districts.find(district => normalizeDistrictToken(district.name) === selectedKey) || null;
-  const sortedDistricts = [...districts].sort((left, right) => {
+  const activeRiskFilter = getRiskFilterMeta(riskFilter);
+  const filteredDistricts = districts.filter(district => activeRiskFilter.match(district));
+  const sortedDistricts = [...filteredDistricts].sort((left, right) => {
     const riskDifference = Number(right.riskScore || 0) - Number(left.riskScore || 0);
     if (riskDifference !== 0) {
       return riskDifference;
@@ -582,6 +898,7 @@ export default function PublicApp() {
 
     return String(left.label || '').localeCompare(String(right.label || ''), 'id');
   });
+  const selectedDistrict = sortedDistricts.find(district => normalizeDistrictToken(district.name) === selectedKey) || sortedDistricts[0] || null;
 
   const activeForecastMeta = forecastDays.find(
     day => maxSafeDayOffset(day?.dayOffset) === effectiveForecastDay
@@ -593,16 +910,15 @@ export default function PublicApp() {
       }
     : null;
 
-  const freshnessBanner = payload ? buildFreshnessBanner(metaForSelectedDay || {}, districts, sourceUrl) : null;
   const sourceStatus = getPublicPayloadStatus(payload?.meta || {}, sourceUrl);
-  const freshnessInfo = payload ? buildFreshnessInfo(metaForSelectedDay || {}, districts) : null;
-  const averageRiskScore = districts.length
-    ? Math.round(districts.reduce((sum, district) => sum + ((Number(district.riskScore) || 0) * 100), 0) / districts.length)
+  const freshnessInfo = payload ? buildFreshnessInfo(metaForSelectedDay || {}, filteredDistricts) : null;
+  const averageRiskScore = filteredDistricts.length
+    ? Math.round(filteredDistricts.reduce((sum, district) => sum + ((Number(district.riskScore) || 0) * 100), 0) / filteredDistricts.length)
     : 0;
 
   const mapSubtitle = selectedDistrict
     ? `${selectedDistrict.label}${selectedDistrict.forecastLabel ? ` (${selectedDistrict.forecastLabel})` : ''} sedang ditampilkan sebagai wilayah fokus.`
-    : `Menampilkan ${districts.length} kecamatan berdasarkan prediksi aktif dan kondisi wilayah terbaru.`;
+    : `Menampilkan ${filteredDistricts.length} kecamatan berdasarkan prediksi aktif dan kondisi wilayah terbaru.`;
 
   const statRefreshParts = [];
   if (freshnessInfo?.forecastValue) {
@@ -639,6 +955,68 @@ export default function PublicApp() {
       behavior: 'smooth'
     });
   };
+
+  useEffect(() => {
+    if (!sortedDistricts.length) {
+      if (selectedKey) {
+        setSelectedKey('');
+      }
+      return;
+    }
+
+    const isSelectedStillVisible = sortedDistricts.some(
+      district => normalizeDistrictToken(district.name) === selectedKey
+    );
+
+    if (!isSelectedStillVisible) {
+      setSelectedKey(normalizeDistrictToken(sortedDistricts[0].name));
+    }
+  }, [selectedKey, sortedDistricts]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!selectedDistrict?.name) {
+      setRiskTrendHistory([]);
+      setRiskTrendLoading(false);
+      return undefined;
+    }
+
+    setRiskTrendLoading(true);
+
+    fetchFirstAvailable(
+      buildPublicDistrictTrendHistoryEndpoints(selectedDistrict.name, 3),
+      'Histori risiko kecamatan gagal dimuat.'
+    )
+      .then(result => {
+        if (cancelled) {
+          return;
+        }
+
+        const historyEntries = Array.isArray(result?.payload?.history) ? result.payload.history : [];
+        const trendEntries = historyEntries.map((item, index) => ({
+          key: `${selectedDistrict.name}-${item.runId || item.targetPredictionDate || index}`,
+          label: index === historyEntries.length - 1 ? 'Hari ini' : `H-${historyEntries.length - 1 - index}`,
+          dateLabel: formatDateNumeric(item.targetPredictionDate || item.observationDate || item.generatedAt),
+          value: Number((Number(item?.riskScore || 0) || 0) * 100)
+        }));
+
+        setRiskTrendHistory(trendEntries);
+        setRiskTrendLoading(false);
+      })
+      .catch(error => {
+        console.warn('Histori risiko publik gagal dimuat:', error);
+        if (cancelled) {
+          return;
+        }
+        setRiskTrendHistory([]);
+        setRiskTrendLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedDistrict?.name]);
 
   return (
     <>
@@ -691,6 +1069,25 @@ export default function PublicApp() {
             ) : null}
           </div>
 
+          <div className="public-risk-filter-row" role="group" aria-label="Filter tingkat risiko">
+            <span className="public-risk-filter-label">Filter Tingkat Risiko</span>
+            <div className="public-risk-filter-chips">
+              {PUBLIC_RISK_FILTERS.map(filterItem => {
+                const isActive = filterItem.key === riskFilter;
+                return (
+                  <button
+                    key={filterItem.key}
+                    className={`public-risk-filter-chip ${isActive ? 'active' : ''}`.trim()}
+                    type="button"
+                    onClick={() => setRiskFilter(filterItem.key)}
+                  >
+                    {filterItem.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           <div className="district-showcase-viewport">
             <button className="showcase-scroll-button is-left" type="button" aria-label="Geser kartu ke kiri" onClick={() => scrollCards(-1)}>
               <img className="showcase-scroll-icon is-left" src={brandAssets.showcaseArrow} alt="" aria-hidden="true" />
@@ -699,7 +1096,7 @@ export default function PublicApp() {
             <div ref={cardsTrackRef} className="district-cards-track" aria-live="polite">
               {sortedDistricts.length === 0 ? (
                 <article className="showcase-empty-card">
-                  {errorMessage || 'Memuat ringkasan kecamatan...'}
+                  {errorMessage || 'Tidak ada kecamatan yang cocok dengan filter risiko saat ini.'}
                 </article>
               ) : sortedDistricts.map(district => {
                 const tone = getRiskTone(district);
@@ -746,12 +1143,12 @@ export default function PublicApp() {
         <section className="stats-grid public-summary-stats">
           <article className="stat-card">
             <span>Total Kecamatan</span>
-            <strong>{formatNumber(districts.length)}</strong>
-            <small>Wilayah yang ditampilkan di peta</small>
+            <strong>{formatNumber(filteredDistricts.length)}</strong>
+            <small>Wilayah yang sedang tampil sesuai filter</small>
           </article>
           <article className="stat-card">
             <span>Perlu Waspada</span>
-            <strong>{formatNumber(districts.filter(district => Number(district.webgisLevel) >= 3).length)}</strong>
+            <strong>{formatNumber(filteredDistricts.filter(district => Number(district.webgisLevel) >= 3).length)}</strong>
             <small>Kecamatan yang butuh perhatian lebih</small>
           </article>
           <article className="stat-card">
@@ -776,12 +1173,6 @@ export default function PublicApp() {
               <div className={`status-pill ${sourceStatus.tone}`.trim()}>{errorMessage ? 'Gagal memuat' : sourceStatus.text}</div>
             </div>
 
-            {freshnessBanner ? (
-              <div className={`data-freshness-banner ${freshnessBanner.tone}`.trim()}>
-                <strong>{freshnessBanner.title}</strong> {freshnessBanner.message}
-              </div>
-            ) : null}
-
             {errorMessage || !geojson ? (
               <div className="detail-content">
                 <div className="empty-state">{errorMessage || 'Memuat peta...'}</div>
@@ -789,7 +1180,7 @@ export default function PublicApp() {
             ) : (
               <PublicRiskMap
                 geojson={geojson}
-                districts={districts}
+                districts={filteredDistricts}
                 selectedKey={selectedKey}
                 onSelect={handleSelectDistrict}
               />
@@ -802,10 +1193,12 @@ export default function PublicApp() {
                 <h2>Detail Kecamatan</h2>
                 <p>Informasi wilayah akan tampil setelah kecamatan dipilih.</p>
               </div>
-              <DetailPanel district={selectedDistrict} />
+              <DetailPanel district={selectedDistrict} trendSeries={riskTrendHistory} isTrendLoading={riskTrendLoading} />
             </section>
           </aside>
         </section>
+
+        <PublicFaqSection />
       </main>
 
       <footer className="site-footer">

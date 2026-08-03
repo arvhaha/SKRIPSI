@@ -174,6 +174,42 @@ export function buildAdminPredictionRunHistoryUrl(limit = 8) {
   return buildApiUrl(`api/admin/prediction-runs?limit=${normalizedLimit}`);
 }
 
+export function buildPublicDistrictTrendHistoryEndpoints(districtName, limit = 3) {
+  const normalizedLimit = Math.max(1, Math.min(Number(limit) || 3, 10));
+  const normalizedDistrictName = encodeURIComponent(String(districtName || '').trim());
+  const protocol = window.location.protocol === 'https:' ? 'https:' : 'http:';
+  const hostName = window.location.hostname || '127.0.0.1';
+  const configuredApiBaseUrl = getConfiguredApiBaseUrl();
+  const candidates = [];
+
+  if (!normalizedDistrictName) {
+    return candidates;
+  }
+
+  if (configuredApiBaseUrl) {
+    candidates.push(`${configuredApiBaseUrl}/api/predictions/history/${normalizedDistrictName}?limit=${normalizedLimit}`);
+  } else {
+    candidates.push(`/api/predictions/history/${normalizedDistrictName}?limit=${normalizedLimit}`);
+  }
+
+  if (hostName === 'localhost' || hostName === '127.0.0.1') {
+    candidates.push(`${protocol}//${hostName}:8011/api/predictions/history/${normalizedDistrictName}?limit=${normalizedLimit}`);
+    candidates.push(`${protocol}//${hostName}:8000/api/predictions/history/${normalizedDistrictName}?limit=${normalizedLimit}`);
+
+    if (hostName !== 'localhost') {
+      candidates.push(`${protocol}//localhost:8011/api/predictions/history/${normalizedDistrictName}?limit=${normalizedLimit}`);
+      candidates.push(`${protocol}//localhost:8000/api/predictions/history/${normalizedDistrictName}?limit=${normalizedLimit}`);
+    }
+
+    if (hostName !== '127.0.0.1') {
+      candidates.push(`${protocol}//127.0.0.1:8011/api/predictions/history/${normalizedDistrictName}?limit=${normalizedLimit}`);
+      candidates.push(`${protocol}//127.0.0.1:8000/api/predictions/history/${normalizedDistrictName}?limit=${normalizedLimit}`);
+    }
+  }
+
+  return [...new Set(candidates)].map(url => ({ url }));
+}
+
 export function buildApiUrl(path) {
   const configuredApiBaseUrl = getConfiguredApiBaseUrl();
   const normalizedPath = String(path || '').replace(/^\/+/, '');
