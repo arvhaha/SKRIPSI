@@ -33,7 +33,7 @@ DATASET_PATH = ROOT / "Master_Data_Spasial_Jaktim_1990_sekarang.csv"
 ARTIFACTS_DIR = ROOT / "artifacts"
 LATEST_SUMMARY_PATH = ARTIFACTS_DIR / "latest_multiclass_training_summary.json"
 MODEL_CONFIG_PATH = ROOT / "operational_multiclass_config.json"
-MODEL_PATH = ROOT / "model_bilstm_4class_jaktim.h5"
+MODEL_PATH = ROOT / "model_lstm_4class_jaktim.h5"
 XGB_PATH = ROOT / "model_xgboost_4class_jaktim.pkl"
 SCALER_PATH = ROOT / "scaler_4class_jaktim.pkl"
 FEATURE_COLUMNS_PATH = ROOT / "daftar_kolom_fitur_4class.pkl"
@@ -263,7 +263,7 @@ def compute_split_points_for_horizon(row_count: int, horizon_days: int) -> tuple
 def build_operational_artifact_paths(horizon_days: int) -> dict[str, Path]:
     suffix = f"_h{int(horizon_days)}"
     return {
-        "model": ROOT / f"model_bilstm_4class_jaktim{suffix}.h5",
+        "model": ROOT / f"model_lstm_4class_jaktim{suffix}.h5",
         "xgb": ROOT / f"model_xgboost_4class_jaktim{suffix}.pkl",
         "scaler": ROOT / f"scaler_4class_jaktim{suffix}.pkl",
         "feature_columns": ROOT / f"daftar_kolom_fitur_4class{suffix}.pkl",
@@ -368,13 +368,18 @@ def prepare_dataset(
     )
 
 
-def build_lstm_model(input_shape: tuple[int, int], feature_layer_name: str) -> Model:
+def build_lstm_model(
+    input_shape: tuple[int, int],
+    feature_layer_name: str,
+    architecture_mode: str = "lstm",
+) -> Model:
     return build_lstm_model_with_loss(
         input_shape=input_shape,
         feature_layer_name=feature_layer_name,
         loss_mode="cross_entropy",
         focal_alpha=None,
         focal_gamma=2.0,
+        architecture_mode=architecture_mode,
     )
 
 
@@ -416,11 +421,25 @@ def build_lstm_model_with_loss(
     loss_mode: str = "cross_entropy",
     focal_alpha: np.ndarray | None = None,
     focal_gamma: float = 2.0,
+    architecture_mode: str = "lstm",
 ) -> Model:
+    normalized_architecture_mode = str(architecture_mode).strip().lower() or "lstm"
+    if normalized_architecture_mode not in {"lstm", "bilstm"}:
+        raise ValueError("architecture_mode harus 'lstm' atau 'bilstm'.")
+
     input_layer = Input(shape=input_shape)
-    x = Bidirectional(LSTM(units=LSTM_CONFIG["units_1"], return_sequences=True))(input_layer)
+    first_lstm_layer = LSTM(units=LSTM_CONFIG["units_1"], return_sequences=True)
+    second_lstm_layer = LSTM(units=LSTM_CONFIG["units_2"], return_sequences=False)
+
+    if normalized_architecture_mode == "bilstm":
+        x = Bidirectional(first_lstm_layer)(input_layer)
+    else:
+        x = first_lstm_layer(input_layer)
     x = Dropout(LSTM_CONFIG["dropout"])(x)
-    x = Bidirectional(LSTM(units=LSTM_CONFIG["units_2"], return_sequences=False))(x)
+    if normalized_architecture_mode == "bilstm":
+        x = Bidirectional(second_lstm_layer)(x)
+    else:
+        x = second_lstm_layer(x)
     x = Dropout(LSTM_CONFIG["dropout"])(x)
     feature_layer = Dense(
         units=LSTM_CONFIG["dense_units"],
@@ -1010,6 +1029,7 @@ def run_training(
     start_date: str | pd.Timestamp | None = None,
     time_steps: int | None = None,
     horizon_days: int = 1,
+    architecture_mode: str = "lstm",
     loss_mode: str = "cross_entropy",
     focal_gamma: float = 2.0,
     output_prefix: str = "retrain_multiclass",
@@ -1022,7 +1042,10 @@ def run_training(
     original_time_steps = TIME_STEPS
     selected_time_steps = int(time_steps or TIME_STEPS)
     normalized_horizon_days = max(1, int(horizon_days))
+    normalized_architecture_mode = str(architecture_mode).strip().lower() or "lstm"
     normalized_loss_mode = str(loss_mode).strip().lower() or "cross_entropy"
+    if normalized_architecture_mode not in {"lstm", "bilstm"}:
+        raise ValueError("architecture_mode harus 'lstm' atau 'bilstm'.")
     if normalized_loss_mode not in {"cross_entropy", "focal"}:
         raise ValueError("loss_mode harus 'cross_entropy' atau 'focal'.")
 
@@ -1073,6 +1096,7 @@ def run_training(
             loss_mode=normalized_loss_mode,
             focal_alpha=focal_alpha,
             focal_gamma=float(focal_gamma),
+            architecture_mode=normalized_architecture_mode,
         )
         early_stop = EarlyStopping(monitor="val_loss", patience=10, restore_best_weights=True)
         reduce_lr = ReduceLROnPlateau(
@@ -1085,7 +1109,8 @@ def run_training(
 
         if verbose:
             print(
-                "\nMelatih Bi-LSTM 4 class dengan fitur temporal tambahan "
+                "\nMelatih "
+                f"{normalized_architecture_mode.upper()} 4 class dengan fitur temporal tambahan "
                 f"(time_steps={TIME_STEPS}, horizon=H+{normalized_horizon_days}, loss={normalized_loss_mode})..."
             )
 
@@ -1169,6 +1194,7 @@ def run_training(
             ),
             "time_steps": TIME_STEPS,
             "forecast_horizon_days": normalized_horizon_days,
+            "architecture_mode": normalized_architecture_mode,
             "feature_count": int(dataset.X_train.shape[2]),
             "feature_columns": dataset.feature_columns,
             "split_summary": dataset.split_summary,
@@ -1187,6 +1213,7 @@ def run_training(
             },
             "class_weights_lstm": {str(label): value for label, value in class_weights.items()},
             "lstm_config": LSTM_CONFIG,
+            "model_architecture_label": "Bi-LSTM" if normalized_architecture_mode == "bilstm" else "LSTM",
             "smote_summary": smote_summary,
             "ensemble_mode": "gated_lstm_xgb_override",
             "xgb_candidate_rows": candidate_rows,
@@ -1210,6 +1237,7 @@ def run_training(
         operational_config = {
             "time_steps": TIME_STEPS,
             "forecast_horizon_days": normalized_horizon_days,
+            "architecture_mode": normalized_architecture_mode,
             "feature_columns": dataset.feature_columns,
             "training_window_start_date": (
                 normalized_start_date.date().isoformat() if normalized_start_date is not None else None
@@ -1331,6 +1359,7 @@ def run_multi_horizon_training(
     horizons: list[int],
     start_date: str | pd.Timestamp | None = None,
     time_steps: int | None = None,
+    architecture_mode: str = "lstm",
     loss_mode: str = "cross_entropy",
     focal_gamma: float = 2.0,
     output_prefix: str = "retrain_multiclass",
@@ -1346,6 +1375,7 @@ def run_multi_horizon_training(
             start_date=start_date,
             time_steps=time_steps,
             horizon_days=horizon_days,
+            architecture_mode=architecture_mode,
             loss_mode=loss_mode,
             focal_gamma=focal_gamma,
             output_prefix=f"{output_prefix}_h{horizon_days}",
@@ -1372,6 +1402,7 @@ def run_multi_horizon_training(
             "feature_columns": primary_summary.get("feature_columns", []),
             "training_window_start_date": primary_summary.get("window_start_date"),
             "loss_mode": loss_mode,
+            "architecture_mode": architecture_mode,
             "ensemble_mode": "gated_lstm_xgb_override",
             "ensemble_rule": primary_summary.get("ensemble_rule", {}),
             "decision_rule": primary_summary.get("decision_rule", {}),
@@ -1413,6 +1444,7 @@ def run_multi_horizon_training(
                 "decision_rule": summary.get("decision_rule", {}),
                 "training_window_start_date": summary.get("window_start_date"),
                 "loss_mode": summary.get("loss_mode"),
+                "architecture_mode": summary.get("architecture_mode"),
             }
 
         with MODEL_CONFIG_PATH.open("w", encoding="utf-8") as handle:
@@ -1436,6 +1468,12 @@ def parse_args() -> argparse.Namespace:
         nargs="+",
         default=[1, 2, 3],
         help="Daftar horizon prediksi yang dilatih, misalnya --horizons 1 2 3.",
+    )
+    parser.add_argument(
+        "--architecture",
+        choices=["lstm", "bilstm"],
+        default="lstm",
+        help="Arsitektur model sekuens yang digunakan.",
     )
     parser.add_argument(
         "--loss-mode",
@@ -1474,6 +1512,7 @@ def main() -> None:
             start_date=args.start_date,
             time_steps=args.time_steps,
             horizon_days=args.horizons[0],
+            architecture_mode=args.architecture,
             loss_mode=args.loss_mode,
             focal_gamma=args.focal_gamma,
             output_prefix=args.output_prefix,
@@ -1487,6 +1526,7 @@ def main() -> None:
         horizons=args.horizons,
         start_date=args.start_date,
         time_steps=args.time_steps,
+        architecture_mode=args.architecture,
         loss_mode=args.loss_mode,
         focal_gamma=args.focal_gamma,
         output_prefix=args.output_prefix,

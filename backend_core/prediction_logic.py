@@ -223,6 +223,19 @@ def load_operational_model_config() -> dict[str, Any]:
     }
 
 
+def infer_sequence_model_label(config: dict[str, Any]) -> str:
+    horizons = dict(config.get("horizons", {}) or {})
+    first_horizon = horizons.get("1")
+    if first_horizon is None and horizons:
+        first_key = sorted(horizons.keys(), key=lambda value: int(value))[0]
+        first_horizon = horizons[first_key]
+
+    model_path = str((first_horizon or {}).get("model_path", MODEL_PATH.name)).lower()
+    if "bilstm" in model_path or "bi_lstm" in model_path:
+        return "Bi-LSTM"
+    return "LSTM"
+
+
 @lru_cache(maxsize=1)
 def load_model_bundles() -> dict[int, ModelBundle]:
     config = load_operational_model_config()
@@ -737,6 +750,7 @@ def build_root_district_payload_from_forecasts(
 
 def build_prediction_payload() -> dict[str, Any]:
     template_payload = copy.deepcopy(load_template_payload())
+    model_config = load_operational_model_config()
     bundles = load_model_bundles()
     primary_bundle = load_model_bundle()
     drainage_profiles = load_drainage_profiles()
@@ -894,7 +908,10 @@ def build_prediction_payload() -> dict[str, Any]:
         "deploymentEnvironmentLabel": APP_ENV_LABEL,
         "isStaging": is_staging_environment(),
         "datasetId": "jaktim-hybrid-backend-v4-4class",
-        "model": "Hybrid Bi-LSTM + XGBoost 4 Class (gated ensemble, chronological split)",
+        "model": (
+            f"Hybrid {infer_sequence_model_label(model_config)} + XGBoost "
+            "4 Class (gated ensemble, chronological split)"
+        ),
         "updatedAt": now.isoformat(),
         "serverGeneratedAt": now.isoformat(),
         "serverCurrentDate": now.strftime("%Y-%m-%d"),

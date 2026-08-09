@@ -47,7 +47,7 @@ from backend_core.sqlite_store import (
 )
 
 SQLITE_DB_PATH = get_sqlite_db_path()
-MODEL_PATH = ROOT / "model_bilstm_4class_jaktim.h5"
+MODEL_PATH = ROOT / "model_lstm_4class_jaktim.h5"
 XGB_PATH = ROOT / "model_xgboost_4class_jaktim.pkl"
 SCALER_PATH = ROOT / "scaler_4class_jaktim.pkl"
 FEATURE_COLUMNS_PATH = ROOT / "daftar_kolom_fitur_4class.pkl"
