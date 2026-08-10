@@ -358,6 +358,18 @@ def apply_admin_overrides_to_payload(
             override_profile,
             override_entry=override_entry,
         )
+
+        for forecast_payload in district_payload.get("forecasts", []) or []:
+            if not isinstance(forecast_payload, dict):
+                continue
+            forecast_payload.setdefault("name", district_payload.get("name"))
+            forecast_payload.setdefault("label", district_payload.get("label"))
+            apply_drainage_profile_to_district_payload(
+                forecast_payload,
+                override_profile,
+                override_entry=override_entry,
+            )
+
         applied_count += 1
 
     payload.setdefault("meta", {})

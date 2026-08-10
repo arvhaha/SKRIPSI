@@ -494,6 +494,27 @@ export default function AdminApp() {
     }
   };
 
+  const handlePublishOverride = async () => {
+    setBusy(true);
+    setMessage({ text: 'Menyimpan draft dan mempublish override ke homepage...', tone: '' });
+
+    try {
+      if (selectedDistrictName) {
+        await postJson(buildApiUrl('api/admin/overrides'), {
+          districtName: selectedDistrictName,
+          drainageCondition: draftOverrideValue
+        });
+      }
+
+      const response = await postJson(buildApiUrl('api/admin/publish'), {});
+      await loadPayload(response.message || 'Override admin berhasil dipublish ke halaman publik.');
+    } catch (error) {
+      console.error('Gagal publish override admin:', error);
+      setMessage({ text: error.message || 'Override admin gagal dipublish ke halaman publik.', tone: 'error' });
+      setBusy(false);
+    }
+  };
+
   const handleExportJson = () => {
     if (!payload) {
       setMessage({ text: 'Belum ada data yang bisa diexport.', tone: 'error' });
@@ -753,11 +774,11 @@ export default function AdminApp() {
                   </div>
 
                 <div className="admin-inline-note admin-inline-note-strong">
-                  Homepage membaca payload publik terbaru secara otomatis setelah scheduler harian atau refresh backend selesai dijalankan.
+                  Klik <strong>Simpan + Publish Override</strong> untuk menerapkan draft override ke homepage. Override tetap aktif sampai admin mereset kecamatan tersebut.
                 </div>
 
                 <div className="admin-inline-note">
-                  Riwayat override dan histori run backend sekarang dipisah ke halaman <strong>Riwayat Override</strong> supaya area review kecamatan tetap fokus ke validasi dan publish draft aktif.
+                  Riwayat override dan histori run backend dipisah ke halaman <strong>Riwayat Override</strong> supaya area review kecamatan tetap fokus ke validasi dan publish draft aktif.
                 </div>
                 </section>
 
@@ -769,6 +790,9 @@ export default function AdminApp() {
                     Reset Kecamatan Ini
                   </button>
                   <a className="admin-link-button button-secondary" href={publicMapUrl}>Buka Peta Kecamatan</a>
+                  <button className="admin-action-button admin-action-button-publish" type="button" onClick={handlePublishOverride} disabled={busy || !payload}>
+                    Simpan + Publish Override
+                  </button>
                 </div>
               </article>
 

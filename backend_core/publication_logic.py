@@ -9,7 +9,6 @@ from backend_core.drainage_logic import (
     load_admin_history_state,
     load_admin_overrides_state,
     load_drainage_profiles,
-    save_admin_overrides_state,
 )
 from backend_core.legacy_core import (
     ADMIN_USERNAME,
@@ -383,7 +382,7 @@ def publish_admin_snapshot() -> dict[str, Any]:
     overrides_state = load_admin_overrides_state()
     apply_admin_overrides_to_payload(live_payload, overrides_state, load_drainage_profiles())
     live_payload = _enrich_runtime_meta(live_payload)
-    cleared_override_count = len(overrides_state.get("districts", {}))
+    applied_override_count = int(live_payload.get("meta", {}).get("adminOverrideCount") or 0)
     live_payload.setdefault("meta", {})
     now = current_jakarta_timestamp().isoformat()
     live_payload["meta"]["publishedAt"] = now
@@ -396,8 +395,8 @@ def publish_admin_snapshot() -> dict[str, Any]:
         if publish_mode == "live_model"
         else "Dipublish dari snapshot bundel admin"
     )
-    live_payload["meta"]["publishedOverrideResetCount"] = cleared_override_count
-    live_payload["meta"]["adminOverrideCount"] = 0
+    live_payload["meta"]["publishedOverrideResetCount"] = 0
+    live_payload["meta"]["adminOverrideCount"] = applied_override_count
     PUBLIC_PAYLOAD_PATH.write_bytes(serialize_payload(live_payload))
     insert_prediction_run(live_payload, "admin_publish")
     insert_publication_snapshot(
@@ -408,22 +407,16 @@ def publish_admin_snapshot() -> dict[str, Any]:
             "sourceLabel": live_payload["meta"].get("publicPayloadSourceLabel"),
             "generatedFromLiveAt": live_payload["meta"].get("updatedAt"),
             "publishedBy": live_payload["meta"].get("publishedBy"),
-            "overrideResetCount": cleared_override_count,
+            "overrideResetCount": 0,
         }
     )
 
-    save_admin_overrides_state(
-        {
-            "updatedAt": now,
-            "districts": {},
-        }
-    )
     append_admin_history_entry(
         action_type="publish",
         title="Publish ke homepage",
         description=(
             f"{len(live_payload.get('districts', []))} kecamatan dipublish ke halaman publik. "
-            f"{cleared_override_count} draft override direset otomatis setelah publish."
+            f"{applied_override_count} override drainase aktif ikut diterapkan."
         ),
     )
     return live_payload

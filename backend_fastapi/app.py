@@ -357,7 +357,7 @@ def publish_admin_predictions() -> PublishResponse:
         status="ok",
         message=(
             "Snapshot publik berhasil dipublish dari panel admin. "
-            f"{published_payload.get('meta', {}).get('publishedOverrideResetCount', 0)} draft override direset."
+            f"{published_payload.get('meta', {}).get('adminOverrideCount', 0)} override drainase aktif ikut diterapkan."
         ),
         publishedAt=published_payload.get("meta", {}).get("publishedAt"),
     )
