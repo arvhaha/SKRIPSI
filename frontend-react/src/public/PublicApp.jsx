@@ -448,10 +448,9 @@ function PublicRiskMap({ geojson, districts, selectedKey, onSelect }) {
 
     const map = L.map(mapContainerRef.current).setView([-6.225, 106.925], 11);
 
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
-      subdomains: 'abcd',
-      maxZoom: 20
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors',
+      maxZoom: 19
     }).addTo(map);
 
     L.control.scale({ imperial: false }).addTo(map);
